@@ -57,8 +57,10 @@ export function boatVerdict(h) {
   const wind = h.dv.wind_speed_10m;
   const gust = h.dv.wind_gusts_10m;
   const period = h.dv.wave_period;
-  if (wave == null && wind == null) {
-    return { level: 'unknown', title: 'Karar verilemiyor', notes: ['Dalga ve rüzgâr verisi alınamadı.'] };
+  // Dalga ya da rüzgâr hiç yoksa "uygun" denmez.
+  if (wave == null || wind == null) {
+    const what = wave == null && wind == null ? 'Dalga ve rüzgâr' : wave == null ? 'Dalga' : 'Rüzgâr';
+    return { level: 'unknown', title: 'Karar verilemiyor', notes: [`${what} verisi alınamadı.`] };
   }
   const notes = [];
   const order = ['good', 'caution', 'bad'];
@@ -226,7 +228,7 @@ export function diveVerdict(series, i, spot) {
 export function combined(series, i, spot) {
   const dive = diveVerdict(series, i, spot);
   const boat = dive.boat;
-  if (dive.level === 'unknown' && boat.level === 'unknown') return { level: 'unknown', label: 'Veri yok', dive, boat };
+  if (boat.level === 'unknown') return { level: 'unknown', label: 'Veri yok', dive, boat };
   const diveOk = dive.level === 'ideal' || dive.level === 'ok';
   const boatOk = boat.level === 'good' || boat.level === 'caution';
   if (diveOk && boatOk) return { level: 'both', label: 'İkisi de', dive, boat };

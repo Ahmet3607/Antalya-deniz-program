@@ -101,6 +101,7 @@ main {
   margin: 0 auto;
   padding: 16px calc(16px + env(safe-area-inset-right)) 8px calc(16px + env(safe-area-inset-left));
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* geniş tablolar sayfayı sağa taşırmasın */
   gap: 16px;
 }
 #alerts:empty { display: none; }

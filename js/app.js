@@ -122,7 +122,9 @@ function renderStatus(ctx) {
   if (!ctx) {
     el.className = 'status';
     el.innerHTML = `<div class="when">${esc(spot().name)} · ${esc(dayLabel(state.day))}</div><div class="title">Bu saat için veri yok</div>
-      <div class="line">Tahminler en fazla 7 gün sonrasına kadar gelir. Daha yakın bir tarih seç.</div>`;
+      <div class="line">${Object.values(state.store).some((x) => x.ok)
+    ? 'Tahminler en fazla 7 gün sonrasına kadar gelir. Daha yakın bir tarih seç.'
+    : 'Kaynaklara ulaşılamadı. Bağlantını kontrol edip “Yenile”ye bas.'}</div>`;
     return;
   }
   const { h, c } = ctx;
@@ -185,7 +187,7 @@ function renderDive(ctx) {
     <dl class="stats">
       ${stat('Su altı görüşü', d.vis.label, d.vis.range ? `tahmini ${d.vis.range}` : '')}
       ${stat('Koy içi dalga', h.localWave == null ? 'Veri yok' : `${num(h.localWave)} m`, h.dv.wave_height != null ? `açıkta ${num(h.dv.wave_height)} m` : '')}
-      ${stat('Rüzgâr', windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}
+      ${stat('Rüzgâr', h.dv.wind_speed_10m == null ? 'Veri yok' : windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}
       ${stat('Akıntı', h.dv.ocean_current_velocity == null ? 'Veri yok' : h.dv.ocean_current_velocity < 0.15 ? 'Yok denecek kadar az' : `${num(h.dv.ocean_current_velocity)} kn`)}
       ${stat('Su sıcaklığı', h.dv.sea_surface_temperature == null ? 'Veri yok' : `${num(h.dv.sea_surface_temperature)} °C`)}
       ${rainStat(d.rain)}
@@ -230,7 +232,7 @@ function renderBoat(ctx) {
     ${b.notes.length ? `<p class="lead">${esc(b.notes.join(' '))}</p>` : ''}
     <dl class="stats">
       ${stat('Açık denizde dalga', h.dv.wave_height == null ? 'Veri yok' : `${num(h.dv.wave_height)} m`, h.dv.wave_direction != null ? `${dirName(h.dv.wave_direction)} yönünden${h.dv.wave_period != null ? `, ${num(h.dv.wave_period, 0)} sn arayla` : ''}` : '')}
-      ${stat('Rüzgâr', windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}
+      ${stat('Rüzgâr', h.dv.wind_speed_10m == null ? 'Veri yok' : windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}
       ${stat('Hamle', h.dv.wind_gusts_10m == null ? 'Veri yok' : `${num(h.dv.wind_gusts_10m, 0)} km/sa`)}
       ${rainStat(c.dive.rain)}
       ${stat('Hava görüşü', vis == null ? 'Veri yok' : vis >= 10 ? 'Açık' : vis >= 4 ? 'Puslu' : 'Kısıtlı', vis == null ? '' : `${num(vis, 0)} km`)}

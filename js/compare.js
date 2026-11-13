@@ -36,7 +36,7 @@ export function windName(deg) {
 
 // "35 km/sa poyraz"
 export function windText(speed, deg) {
-  if (speed == null) return 'veri yok';
+  if (speed == null) return 'rüzgâr verisi yok';
   if (speed < 4) return 'rüzgâr yok denecek kadar az';
   return `${Math.round(speed)} km/sa ${windName(deg)}`.trim();
 }
