@@ -27,6 +27,12 @@ Sonra `http://localhost:8000` adresini aç. GitHub Pages üzerinde de doğrudan 
 
 Testler: `node --test tests/*.mjs`
 
+## iPhone'a kurma
+
+1. Programın yayınlandığı adresi iPhone'da **Safari** ile aç.
+2. Paylaş düğmesine, sonra **Ana Ekrana Ekle**'ye dokun.
+3. Ana ekrandaki "Deniz" simgesi programı tam ekran açar. Tahmin verisi için internet gerekir; bağlantı yoksa son çekilen veri gösterilir.
+
 ## Kaynaklar, ücretler ve lisanslar
 
 Kasım 2026'da resmî sayfalardan kontrol edildi; kullanmadan önce güncel hâlini doğrula.

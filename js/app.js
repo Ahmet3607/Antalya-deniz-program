@@ -156,7 +156,10 @@ function renderHours() {
       title="${esc(v.title)}"><b>${hhmm(h.time)}</b>${num(h.localWave)} m<br>${num(h.dv.wind_speed_10m, 0)} kn ${compass(h.dv.wind_direction_10m)}</button>`);
   });
   $('hours').innerHTML = out.join('') || '<p class="muted">Bu gün için veri yok.</p>';
-  $('hours').querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  // Yalnızca şeridi yatay kaydır; sayfanın kendisi yerinden oynamasın.
+  const box = $('hours');
+  const sel = box.querySelector('[aria-pressed="true"]');
+  if (sel) box.scrollLeft = sel.offsetLeft - box.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2;
 }
 
 function fmtValue(v, value) {
@@ -394,3 +397,5 @@ $('sgForm').addEventListener('submit', async (e) => {
 });
 
 load();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* çevrimdışı destek yok, uygulama yine çalışır */ });
