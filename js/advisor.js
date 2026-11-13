@@ -7,6 +7,32 @@ import { angDiff } from './compare.js';
 const n1 = (v) => v.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const n0 = (v) => Math.round(v).toLocaleString('tr-TR');
 
+// ---------- sözle anlatım ----------
+
+const pick = (v, steps) => {
+  let i = 0;
+  while (i < steps.length - 1 && v >= steps[i][0]) i++;
+  return { idx: i, word: steps[i][1] };
+};
+
+// Rüzgâr (km/sa)
+export const windWord = (v) => (v == null ? null : pick(v, [
+  [6, 'esmez'], [12, 'hafif eser'], [20, 'orta eser'], [30, 'kuvvetli eser'], [45, 'sert eser'], [Infinity, 'çok sert, fırtına'],
+]));
+
+// Dalga (m, tepe–çukur)
+export const waveWord = (v) => (v == null ? null : pick(v, [
+  [0.1, 'çarşaf gibi'], [0.3, 'hafif çırpıntı'], [0.6, 'hafif dalgalı'], [1.0, 'orta dalgalı'], [1.5, 'dalgalı'], [2.5, 'sert dalgalı'], [Infinity, 'çok sert'],
+]));
+
+// Yağış (mm/sa)
+export const rainWord = (v) => (v == null ? null : pick(v, [
+  [0.1, 'yağış yok'], [0.5, 'çiseleme'], [1, 'hafif yağmur'], [4, 'orta yağmur'], [10, 'kuvvetli yağmur'], [Infinity, 'sağanak'],
+]));
+
+// Dalganın düz deniz hizasından yüksekliği (cm). Tahmin tepe–çukur verdiği için yarısı alınır.
+export const aboveFlatCm = (m) => (m == null ? null : Math.round(m * 50));
+
 // ---------- yağış ----------
 
 // Saatlik yağış: modellerin ortalaması, en yükseği ve kaç modelin yağış gösterdiği.
@@ -18,11 +44,12 @@ export function rainInfo(h) {
   const mm = c.mean;
   let cls = 'none';
   let label = 'yağış yok';
-  if (mm >= 10) { cls = 'violent'; label = 'çok kuvvetli sağanak'; }
+  if (mm >= 10) { cls = 'violent'; label = 'sağanak'; }
   else if (mm >= 4) { cls = 'heavy'; label = 'kuvvetli yağmur'; }
-  else if (mm >= 1) { cls = 'moderate'; label = 'orta şiddette yağmur'; }
-  else if (mm >= 0.1) { cls = 'light'; label = 'hafif yağmur'; }
-  else if (wet > 0) { cls = 'possible'; label = 'yağış ihtimali düşük'; }
+  else if (mm >= 1) { cls = 'moderate'; label = 'orta yağmur'; }
+  else if (mm >= 0.5) { cls = 'light'; label = 'hafif yağmur'; }
+  else if (mm >= 0.1) { cls = 'drizzle'; label = 'çiseleme'; }
+  else if (wet > 0) { cls = 'possible'; label = 'yağış beklenmez'; }
   if (thunder) label += ', gök gürültülü';
   return { known: true, mm, max: c.max, models: c.count, wet, cls, label, thunder };
 }
@@ -272,10 +299,15 @@ export function combined(series, i, spot) {
 
 // Seçilen gün için en iyi ardışık 3 saat (gece saatleri dahil; fenerle dalınabiliyor).
 // minTime verilirse (bugün için şimdiki saat) geçmiş saatler hesaba katılmaz.
-export function bestWindow(series, spot, day, minTime = null) {
+// range = [başlangıç, bitiş] saat olarak verilirse yalnızca o aralığa bakılır.
+export function bestWindow(series, spot, day, minTime = null, range = null) {
   const scored = [];
   series.hours.forEach((h, i) => {
     if (!h.time.startsWith(day) || (minTime && h.time < minTime)) return;
+    if (range) {
+      const hr = Number(h.time.slice(11, 13));
+      if (hr < range[0] || hr > range[1]) return;
+    }
     const v = diveVerdict(series, i, spot);
     if (v.score != null) scored.push({ i, v });
   });
@@ -338,11 +370,11 @@ export function weekOutlook(series, spot, days, nowTime) {
 }
 
 // Tüm koyları seçilen gün için sıralar: önce uygunluk düzeyi, sonra puan.
-export function rankSpots(allSeries, spots, day, minTime = null) {
+export function rankSpots(allSeries, spots, day, minTime = null, range = null) {
   const order = ['ideal', 'ok', 'marginal', 'no'];
   const key = (r) => (r.best ? order.indexOf(r.best.level) * 1000 - r.best.score : 1e6);
   return spots
-    .map((spot) => ({ spot, best: bestWindow(allSeries[spot.id], spot, day, minTime) }))
+    .map((spot) => ({ spot, best: bestWindow(allSeries[spot.id], spot, day, minTime, range) }))
     .sort((a, b) => key(a) - key(b));
 }
 
@@ -365,4 +397,46 @@ export function moonPhase(date) {
   const age = ((((date.getTime() - ref) / 86400000) % synodic) + synodic) % synodic;
   const names = ['Yeni ay', 'Hilal (büyüyen)', 'İlk dördün', 'Şişkin ay (büyüyen)', 'Dolunay', 'Şişkin ay (küçülen)', 'Son dördün', 'Hilal (küçülen)'];
   return { age, name: names[Math.round((age / synodic) * 8) % 8], nearSyzygy: age < 2.5 || age > synodic - 2.5 || Math.abs(age - synodic / 2) < 2.5 };
+}
+
+// ---------- saat aralığı raporu ----------
+
+const hh = (t) => t.slice(11, 16);
+const spanText = (a, b) => (a === b ? `Saat ${hh(a)}` : `${hh(a)}–${b.slice(11, 13)}:59`);
+
+// Aynı türden notları ardışık saatlerde birleştirir: "09:00–10:59: Koy içinde dalga var..."
+// items: [{ time, notes: [metin] }]
+export function groupNotes(items) {
+  const keyOf = (t) => t.split(/[(:]/)[0].trim();
+  const groups = [];
+  const open = new Map();
+  items.forEach((it, n) => {
+    const seen = new Set();
+    for (const text of it.notes) {
+      const k = keyOf(text);
+      seen.add(k);
+      const g = open.get(k);
+      if (g && g.last === n - 1) {
+        g.last = n;
+        g.to = it.time;
+      } else {
+        const ng = { key: k, from: it.time, to: it.time, last: n, text };
+        open.set(k, ng);
+        groups.push(ng);
+      }
+    }
+  });
+  return groups.map((g) => `${spanText(g.from, g.to)}: ${g.text}`);
+}
+
+// Aralık içinde koşul kötüleşiyorsa haber verir: "Saat 09:00'dan itibaren dalga artıyor..."
+// get: saatten değeri alır; word: değeri söze çevirir; describe: uyarı cümlesini kurar.
+export function trendNote(hours, get, word, describe) {
+  const first = hours.find((h) => get(h) != null);
+  if (!first) return null;
+  const base = word(get(first)).idx;
+  const worse = hours.find((h) => get(h) != null && word(get(h)).idx > base);
+  if (!worse) return null;
+  const peak = hours.reduce((a, h) => (get(h) != null && get(h) > get(a) ? h : a), worse);
+  return describe(worse, peak);
 }

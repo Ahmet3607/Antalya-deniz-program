@@ -70,11 +70,11 @@ a { color: var(--accent); }
 .top h1 { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
 .top p { font-size: 0.8rem; color: #a9c3d1; margin-top: 2px; }
 
-.picker { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; margin-top: 14px; }
-.picker label:first-child { grid-column: 1 / -1; }
+.picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 14px; }
+.picker .wide { grid-column: 1 / -1; }
 @media (min-width: 720px) {
-  .picker { grid-template-columns: 1.4fr 1.2fr 0.9fr; }
-  .picker label:first-child { grid-column: auto; }
+  .picker { grid-template-columns: 1.5fr 1.3fr 1fr 1fr; }
+  .picker .wide { grid-column: auto; }
 }
 .picker label { display: grid; gap: 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a9c3d1; min-width: 0; }
 
@@ -260,3 +260,24 @@ footer {
 
 .picker label b { color: #fff; font-weight: 650; text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
 .week td { vertical-align: middle; }
+
+/* iOS tarih kutusu kendi genişliğini dayatıp yandaki alanın üstüne taşmasın */
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; text-align: left; max-width: 100%; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+/* dalga görüntüsü */
+.wavepic { display: block; width: 100%; height: auto; margin: 6px 0 10px; border-radius: 10px; background: var(--line-soft); }
+.wavepic .sea { fill: var(--rain); opacity: 0.28; }
+.wavepic .crest { fill: none; stroke: var(--rain); stroke-width: 2.5; }
+.wavepic .bay { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: 0.6; }
+.wavepic .flat { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.wavepic .mark { stroke: var(--text); stroke-width: 1.5; }
+.wavepic .lbl { fill: var(--muted); font-size: 15px; }
+.wavepic .val { fill: var(--text); font-size: 19px; font-weight: 700; }
+.wavepic .hull { fill: var(--text); }
+.wavepic .cabin { fill: var(--muted); }
+.lead b { color: var(--text); }
+
+/* açılır kapanır panel */
+details.fold > div { padding-bottom: 2px; }
+.chart .col.out { opacity: 0.35; }

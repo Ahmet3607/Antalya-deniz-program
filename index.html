@@ -24,9 +24,10 @@
       <button id="refresh" type="button">Yenile</button>
     </div>
     <div class="picker">
-      <label>Konum <select id="spot"></select></label>
-      <label><span>Tarih <b id="dateDay"></b></span><input id="date" type="date"></label>
-      <label>Saat <select id="hour"></select></label>
+      <label class="wide">Konum <select id="spot"></select></label>
+      <label class="wide"><span>Tarih <b id="dateDay"></b></span><input id="date" type="date"></label>
+      <label>Başlangıç saati <select id="from"></select></label>
+      <label>Bitiş saati <select id="to"></select></label>
     </div>
   </header>
 
@@ -37,7 +38,7 @@
 
     <section>
       <div class="head">
-        <h2>Gün boyu <span id="dayName" class="muted"></span></h2>
+        <h2>Saatler <span id="dayName" class="muted"></span></h2>
         <ul class="legend">
           <li><i class="dot both"></i>Zıpkın ve tekne</li>
           <li><i class="dot one"></i>Yalnız biri</li>
@@ -46,9 +47,15 @@
       </div>
       <p id="sun" class="sun"></p>
       <div id="hours" class="hours"></div>
+      <p class="note">Bir saate dokununca dalga görüntüsü ve kaynak karşılaştırması o saate geçer.</p>
     </section>
 
-    <section id="week" class="panel"></section>
+    <section id="wave" class="panel"></section>
+
+    <details id="weekBox" class="fold">
+      <summary>Haftaya bakış <span id="weekSpot" class="muted"></span></summary>
+      <div id="week"></div>
+    </details>
 
     <section id="dive" class="panel"></section>
     <section id="boat" class="panel"></section>
