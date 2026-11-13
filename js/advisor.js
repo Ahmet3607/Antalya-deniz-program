@@ -195,6 +195,13 @@ export function isDaylight(series, time) {
   return time >= series.daily.sunrise[d].slice(0, 13) + ':00' && time <= series.daily.sunset[d];
 }
 
+// Seçilen günün gün doğumu ve batımı ("06:41" biçiminde); veri yoksa null.
+export function sunTimes(series, day) {
+  const d = series.daily ? series.daily.time.indexOf(day) : -1;
+  if (d < 0) return null;
+  return { rise: series.daily.sunrise[d].slice(11, 16), set: series.daily.sunset[d].slice(11, 16) };
+}
+
 // ---------- zıpkın ----------
 
 export function diveVerdict(series, i, spot) {
@@ -222,7 +229,7 @@ export function diveVerdict(series, i, spot) {
   let r = Math.max(rw, rwind, rc);
   const daylight = isDaylight(series, h.time);
   // En belirleyici neden en başta olsun.
-  if (!daylight) { r = 3; notes.push('Gün ışığı yok: su altında hiçbir şey göremezsin, tekne de seni göremez.'); }
+  // Gece tek başına engel değildir; fenerle dalınabilir. Yalnızca bilgi olarak belirtilir.
   if (rain.thunder) { r = 3; notes.push('Gök gürültülü fırtına riski var: yıldırım nedeniyle suda olmak tehlikeli.'); }
   if (rw === 3) notes.push(`Koy içinde dalga sert (${n1(lw)} m): seni çabuk yorar, kayalara savurur, dibi kaldırıp suyu bulandırır.`);
   else if (rw === 2) notes.push(`Koy içinde dalga var (${n1(lw)} m): yüzeyde nefes almak zorlaşır, sığlarda su bulanır.`);
@@ -246,7 +253,8 @@ export function diveVerdict(series, i, spot) {
   if (rain.known) score -= Math.min(10, rain.mm * 2.5);
   if (h.cmp.wave_height.agreement === 'poor' || h.cmp.wind_speed_10m.agreement === 'poor') score -= 8;
   if (r === 3) score = Math.min(score, 15);
-  return { level, title, notes, score: Math.max(0, Math.round(score)), vis, boat, rain, daylight };
+  const info = daylight ? [] : ['Gece saati: fenerle dalınabilir; şamandıra ışığı ve teknede gözcü bulundur.'];
+  return { level, title, notes, info, score: Math.max(0, Math.round(score)), vis, boat, rain, daylight };
 }
 
 // Saat kutusunun rengi: ikisi de uygunsa yeşil, biri uygunsa sarı, hiçbiri değilse kırmızı.

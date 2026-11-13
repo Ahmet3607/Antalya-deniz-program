@@ -145,6 +145,8 @@ h3 { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spa
 .dot.one { background: var(--amber); }
 .dot.none { background: var(--red); }
 
+.sun { font-size: 0.9rem; font-weight: 600; margin: -4px 0 10px; }
+.sun:empty { display: none; }
 .hours { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 @media (min-width: 720px) { .hours { grid-template-columns: repeat(12, 1fr); } }
 .hour {

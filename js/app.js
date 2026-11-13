@@ -2,7 +2,7 @@ import { SPOTS, VARIABLES } from './config.js';
 import { loadAll, loadStormglass, localHourString, getStormglassKey, setStormglassKey } from './sources.js';
 import { buildSeries } from './analysis.js';
 import { AGREEMENT_LABEL, describe, dirName, windName, windText } from './compare.js';
-import { combined, bestWindow, rankSpots, calmestSpot, dayRain, rainInfo, isDaylight } from './advisor.js';
+import { combined, bestWindow, rankSpots, calmestSpot, dayRain, rainInfo, isDaylight, sunTimes } from './advisor.js';
 import { spearFish, boatFishing } from './fish.js';
 
 const $ = (id) => document.getElementById(id);
@@ -143,7 +143,7 @@ function renderStatus(ctx) {
   el.className = `status t-${TONE[c.level]}`;
   el.innerHTML = `<div class="when">${esc(spot().name)} · ${esc(dayLabel(state.day))} · ${hhmm(state.time)}</div>
     <div class="title">${titles[c.level]}</div>
-    <div class="line">${esc(line.charAt(0).toLocaleUpperCase('tr-TR') + line.slice(1))}</div>${why(c)}`;
+    <div class="line">${esc(line.charAt(0).toLocaleUpperCase('tr-TR') + line.slice(1))}${c.dive.daylight === false ? ' · gece, fener gerekir' : ''}</div>${why(c)}`;
 }
 
 // Zıpkın ya da tekne uygun değilse nedenini açıkça yazar.
@@ -168,6 +168,8 @@ function renderHours() {
       aria-pressed="${h.time === state.time}" title="${esc(c.label)}"><b>${h.time.slice(11, 13)}</b><span>${short[c.label]}</span></button>`);
   });
   $('dayName').textContent = dayLabel(state.day);
+  const sun = sunTimes(s, state.day);
+  $('sun').textContent = sun ? `Gün doğumu ${sun.rise} · Gün batımı ${sun.set}` : '';
   $('hours').innerHTML = out.join('') || '<p class="muted">Bu gün için veri yok.</p>';
 }
 
@@ -193,7 +195,7 @@ function renderDive(ctx) {
 
   el.innerHTML = `
     <div class="head"><h2>Zıpkın</h2>${badge(d.title, DIVE_TONE[d.level])}</div>
-    ${d.notes.length ? `<ul class="reasons">${d.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+    ${d.notes.length || d.info?.length ? `<ul class="reasons">${[...d.notes, ...(d.info ?? [])].map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
     <dl class="stats">
       ${stat('Su altı görüşü', d.vis.label, d.vis.range ? `tahmini ${d.vis.range}` : '')}
       ${stat('Koy içi dalga', h.localWave == null ? 'Veri yok' : `${num(h.localWave)} m`, h.dv.wave_height != null ? `açıkta ${num(h.dv.wave_height)} m` : '')}
