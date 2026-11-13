@@ -13,6 +13,9 @@ const endOf = (t) => `${t.slice(11, 13)}:59`;
 const DAY_NAMES = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
+// Her yayında artırılır. Ekranın altında görünür; çalışan KODUN sürümünü gösterir.
+const VERSION = 9;
+
 const state = {
   store: {}, // Open-Meteo modelleri
   sg: null, // Stormglass (seçili konum)
@@ -592,6 +595,19 @@ $('sgForm').addEventListener('submit', async (e) => {
   renderAll();
 });
 
+$('version').textContent = `Sürüm ${VERSION}`;
 load();
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* çevrimdışı destek yok, uygulama yine çalışır */ });
+// Yeni sürüm arka planda hazır olunca sayfayı bir kez yenile; kullanıcı eski kodla kalmasın.
+if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('sw.js')
+    .then((reg) => reg.update())
+    .catch(() => { /* çevrimdışı destek yok, uygulama yine çalışır */ });
+}
