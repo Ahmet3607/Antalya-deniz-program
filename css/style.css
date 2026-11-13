@@ -70,12 +70,8 @@ a { color: var(--accent); }
 .top h1 { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
 .top p { font-size: 0.8rem; color: #a9c3d1; margin-top: 2px; }
 
-.picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 14px; }
-.picker .wide { grid-column: 1 / -1; }
-@media (min-width: 720px) {
-  .picker { grid-template-columns: 1.5fr 1.3fr 1fr 1fr; }
-  .picker .wide { grid-column: auto; }
-}
+.picker { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 14px; }
+@media (min-width: 720px) { .picker { grid-template-columns: 1.5fr 1.3fr 1fr; } }
 .picker label { display: grid; gap: 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a9c3d1; min-width: 0; }
 
 button, select, input {
@@ -281,3 +277,11 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 /* açılır kapanır panel */
 details.fold > div { padding-bottom: 2px; }
 .chart .col.out { opacity: 0.35; }
+
+/* saat aralığı raporu */
+.rangepick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 10px 0 4px; max-width: 420px; }
+.rangepick label { display: grid; gap: 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.rblock { border-top: 1px solid var(--line-soft); margin-top: 14px; padding-top: 12px; }
+.rblock .head { margin-bottom: 6px; }
+.rblock h3 { margin: 0; font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--text); font-weight: 650; }
+.rblock .lead { color: var(--text); }

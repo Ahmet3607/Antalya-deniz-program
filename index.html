@@ -26,8 +26,7 @@
     <div class="picker">
       <label class="wide">Konum <select id="spot"></select></label>
       <label class="wide"><span>Tarih <b id="dateDay"></b></span><input id="date" type="date"></label>
-      <label>Başlangıç saati <select id="from"></select></label>
-      <label>Bitiş saati <select id="to"></select></label>
+      <label class="wide">Saat <select id="hour"></select></label>
     </div>
   </header>
 
@@ -47,10 +46,20 @@
       </div>
       <p id="sun" class="sun"></p>
       <div id="hours" class="hours"></div>
-      <p class="note">Bir saate dokununca dalga görüntüsü ve kaynak karşılaştırması o saate geçer.</p>
+      <p class="note">Bir saate dokununca aşağıdaki bütün bölümler o saate geçer.</p>
     </section>
 
     <section id="wave" class="panel"></section>
+
+    <section class="panel">
+      <div class="head"><h2>Saat aralığı raporu</h2></div>
+      <p class="lead">İki saat seç; o aralık için zıpkın ve tekne ayrı ayrı değerlendirilir. Üstte seçtiğin saati değiştirmez.</p>
+      <div class="rangepick">
+        <label>Başlangıç <select id="from"></select></label>
+        <label>Bitiş <select id="to"></select></label>
+      </div>
+      <div id="rangeOut"></div>
+    </section>
 
     <details id="weekBox" class="fold">
       <summary>Haftaya bakış <span id="weekSpot" class="muted"></span></summary>

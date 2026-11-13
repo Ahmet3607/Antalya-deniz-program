@@ -6,9 +6,10 @@ Antalya körfezindeki koylar için çok kaynaklı deniz tahmini, kaynak karşıl
 
 Ekran yukarıdan aşağıya şöyle dizilir:
 
-1. **Konum, tarih ve saat aralığı.** Bugünden 7 gün sonrasına kadar bir gün ve başlangıç–bitiş saati seçilir; tüm raporlar bu aralığa göre hazırlanır.
-2. **Saatler.** Aralıktaki her saat: zıpkın ve tekne ikisi de uygunsa yeşil, yalnız biri uygunsa sarı (hangisi olduğu yazar), ikisi de uygun değilse kırmızı. Üstünde gün doğumu ve batımı yazar. Uygun olmayan ya da aralık içinde kötüleşen koşullar saatiyle birlikte uyarı olarak listelenir.
+1. **Konum, tarih ve saat seçimi.** Bugünden 7 gün sonrasına kadar bir gün ve saat seçilir; bütün ana bölümler bu saate göre çalışır.
+2. **Saatler.** Günün 24 saati: zıpkın ve tekne ikisi de uygunsa yeşil, yalnız biri uygunsa sarı (hangisi olduğu yazar), ikisi de uygun değilse kırmızı. Üstünde gün doğumu ve batımı yazar. Saate dokununca o saate geçilir; uygun değilse nedeni yazılır.
 2a. **Dalga görüntüsü.** Dokunulan saat için tahmini dalga şekli; düz deniz hizasından kaç cm yükseldiği ve kaç saniyede bir geldiği.
+2a2. **Saat aralığı raporu.** Kendi başlangıç–bitiş seçimi olan ayrı bölüm; o aralık için zıpkın ve tekne ayrı ayrı açıklanır, kötüleşen koşullar saatiyle uyarı olarak yazılır. Üstte seçilen saati değiştirmez.
 2b. **Haftaya bakış (açılır kapanır).** Her gün için durum, uygun saat sayısı, en iyi aralık, dalga, rüzgâr ve yağış. Yalnızca bilgi verir; seçimi değiştirmez.
 3. **Zıpkın.** Su altı görüşü, koy içi dalga, rüzgâr, akıntı, su sıcaklığı, yağış; en iyi saat, en iyi koylar ve türlere göre balık aktivitesi tahmini.
 4. **Tekne.** Dalga, rüzgâr, hamle, yağış, hava görüşü, en sakin bölge; yönteme göre av önerileri (derinlik, gelebilecek balık, yem ya da jig).
