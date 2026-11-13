@@ -92,17 +92,19 @@ export const VARIABLES = [
 // open: dalganın koya girebildiği yön aralığı (dalganın GELDİĞİ yön, derece, saat yönünde).
 // river: yağmur sonrası dere/nehir bulanıklığı etkisi (0 = yok, 1 = çok).
 // shelter: koyun kendi içindeki ek korunma (1 = yok, daha küçük = daha korunaklı).
+// habitat: zemin tipi. sand = kum/çakıl, rock = kayalık kıyı, reef = ada/sığlık/sert düşüş,
+//          river = dere ağzı, seagrass = eriştelik. Balık tahmini buna göre süzülür.
 export const SPOTS = [
-  { id: 'konyaalti', name: 'Konyaaltı', lat: 36.855, lon: 30.645, open: [90, 190], river: 0.9, shelter: 1 },
-  { id: 'falezler', name: 'Falezler (Kaleiçi)', lat: 36.872, lon: 30.715, open: [140, 250], river: 0.5, shelter: 1 },
-  { id: 'lara', name: 'Lara / Düden', lat: 36.845, lon: 30.800, open: [130, 260], river: 1, shelter: 1 },
-  { id: 'sicanadasi', name: 'Sıçan Adası', lat: 36.795, lon: 30.590, open: [50, 190], river: 0.2, shelter: 0.9 },
-  { id: 'beldibi', name: 'Beldibi', lat: 36.720, lon: 30.585, open: [30, 170], river: 0.3, shelter: 1 },
-  { id: 'kemer', name: 'Kemer', lat: 36.600, lon: 30.580, open: [20, 170], river: 0.4, shelter: 0.9 },
-  { id: 'phaselis', name: 'Phaselis', lat: 36.523, lon: 30.558, open: [40, 160], river: 0.1, shelter: 0.7 },
-  { id: 'ucadalar', name: 'Tekirova / Üç Adalar', lat: 36.458, lon: 30.552, open: [20, 200], river: 0.1, shelter: 1 },
-  { id: 'cirali', name: 'Çıralı / Olimpos', lat: 36.410, lon: 30.488, open: [40, 170], river: 0.4, shelter: 1 },
-  { id: 'adrasan', name: 'Adrasan', lat: 36.300, lon: 30.480, open: [90, 170], river: 0.2, shelter: 0.7 },
+  { id: 'konyaalti', name: 'Konyaaltı', lat: 36.855, lon: 30.645, open: [90, 190], river: 0.9, shelter: 1, habitat: ['sand', 'river'] },
+  { id: 'falezler', name: 'Falezler (Kaleiçi)', lat: 36.872, lon: 30.715, open: [140, 250], river: 0.5, shelter: 1, habitat: ['rock'] },
+  { id: 'lara', name: 'Lara / Düden', lat: 36.845, lon: 30.800, open: [130, 260], river: 1, shelter: 1, habitat: ['sand', 'river', 'rock'] },
+  { id: 'sicanadasi', name: 'Sıçan Adası', lat: 36.795, lon: 30.590, open: [50, 190], river: 0.2, shelter: 0.9, habitat: ['reef', 'rock'] },
+  { id: 'beldibi', name: 'Beldibi', lat: 36.720, lon: 30.585, open: [30, 170], river: 0.3, shelter: 1, habitat: ['rock', 'sand'] },
+  { id: 'kemer', name: 'Kemer', lat: 36.600, lon: 30.580, open: [20, 170], river: 0.4, shelter: 0.9, habitat: ['rock', 'sand'] },
+  { id: 'phaselis', name: 'Phaselis', lat: 36.523, lon: 30.558, open: [40, 160], river: 0.1, shelter: 0.7, habitat: ['rock', 'seagrass'] },
+  { id: 'ucadalar', name: 'Tekirova / Üç Adalar', lat: 36.458, lon: 30.552, open: [20, 200], river: 0.1, shelter: 1, habitat: ['reef', 'rock'] },
+  { id: 'cirali', name: 'Çıralı / Olimpos', lat: 36.410, lon: 30.488, open: [40, 170], river: 0.4, shelter: 1, habitat: ['sand', 'rock', 'river'] },
+  { id: 'adrasan', name: 'Adrasan', lat: 36.300, lon: 30.480, open: [90, 170], river: 0.2, shelter: 0.7, habitat: ['rock', 'sand'] },
 ];
 
 // 10 m üzeri motorlu tekne için eşikler (açık deniz değerleri üzerinden). Rüzgâr km/sa.

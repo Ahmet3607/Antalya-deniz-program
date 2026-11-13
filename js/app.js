@@ -205,11 +205,11 @@ function renderDive(ctx) {
       <div>
         <h3>Balık aktivitesi tahmini</h3>
         <ul class="fish">
-          ${fish.list.map((f) => `<li><span class="name">${esc(f.name)}<small>${esc(f.depth)}${f.inSeason ? '' : ' · mevsim dışı'}</small></span>
+          ${fish.list.map((f) => `<li><span class="name">${esc(f.name)}<small>${esc(f.depth)}${f.inSeason ? '' : ' · mevsim dışı'}${f.match === 0 ? ' · bu zeminde beklenmez' : ''}</small></span>
             <span class="pct">%${f.pct}</span><span class="bar"><i style="width:${f.pct}%"></i></span>
             <span class="where">${esc(f.where)}</span></li>`).join('')}
         </ul>
-        <p class="note">Yüzdeler; mevsim, su sıcaklığı, akıntı, görüş ve saate göre hesaplanan aktivite tahminidir, tutulan balık istatistiği değildir. Ay: ${esc(fish.moon.name.toLocaleLowerCase('tr-TR'))}.${fish.sstKnown ? '' : ' Su sıcaklığı verisi olmadığı için daha belirsiz.'}</p>
+        <p class="note">Yüzdeler; bu noktanın zemini, mevsim, su sıcaklığı, akıntı, görüş ve saate göre hesaplanan aktivite tahminidir, tutulan balık istatistiği değildir. Ay: ${esc(fish.moon.name.toLocaleLowerCase('tr-TR'))}.${fish.sstKnown ? '' : ' Su sıcaklığı verisi olmadığı için daha belirsiz.'}</p>
       </div>
     </div>`;
 }

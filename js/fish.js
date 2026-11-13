@@ -18,8 +18,31 @@ export const SPEAR_SPECIES = [
   { name: 'İskaroz', months: [4, 5, 6, 7, 8, 9, 10, 11], temp: [19, 29], depth: '3–20 m', where: 'yosunlu kayalıklar', likes: ['calm', 'clear'] },
   { name: 'Çipura', months: [9, 10, 11, 12, 1], temp: [15, 25], depth: '3–15 m', where: 'kumluk–eriştelik geçişleri', likes: ['calm'] },
   { name: 'Levrek', months: [11, 12, 1, 2, 3], temp: [12, 20], depth: '1–8 m', where: 'dere ağızları, köpüklü sığlıklar', likes: ['murky', 'surge', 'river'] },
+  { name: 'Kefal', months: ALL, temp: [12, 30], depth: '1–10 m', where: 'kumluk sığlıklar, dere ağızları', likes: ['calm', 'river'] },
+  { name: 'Mırmır', months: [4, 5, 6, 7, 8, 9, 10, 11], temp: [17, 28], depth: '1–10 m', where: 'kumluk dip, dalganın kumu kaldırdığı yerler', likes: ['surge'] },
   { name: 'Aslan balığı', months: ALL, temp: [18, 30], depth: '5–30 m', where: 'kaya kovukları, batıklar (istilacı tür)', likes: [] },
 ];
+
+// Türün hangi zeminde ne kadar bulunduğu (1 = asıl yeri, 0 = orada beklenmez).
+// Listede olmayan zemin 0 sayılır.
+const HABITAT = {
+  'Sinarit': { reef: 1, rock: 0.55 },
+  'Akya': { reef: 1, rock: 0.7, river: 0.6, sand: 0.3 },
+  'Sarıkuyruk': { reef: 1, rock: 0.4 },
+  'Sargos / karagöz': { rock: 1, reef: 1, sand: 0.25 },
+  'Eşkina': { rock: 1, reef: 1 },
+  'İskaroz': { rock: 1, reef: 0.9, seagrass: 0.6 },
+  'Çipura': { sand: 1, seagrass: 1, river: 0.8, rock: 0.4 },
+  'Levrek': { river: 1, sand: 0.7, rock: 0.4 },
+  'Aslan balığı': { rock: 1, reef: 1 },
+  'Kefal': { sand: 1, river: 1, rock: 0.6, seagrass: 0.6 },
+  'Mırmır': { sand: 1, seagrass: 0.6 },
+};
+
+function habitatMatch(name, spot) {
+  const h = HABITAT[name] ?? {};
+  return Math.max(0, ...(spot.habitat ?? []).map((t) => h[t] ?? 0));
+}
 
 // needs: yöntemin rahat uygulanabildiği en yüksek dalga (m) ve rüzgâr (km/sa)
 export const BOAT_METHODS = [
@@ -96,7 +119,10 @@ export function spearFish(series, i, spot) {
     if (dp != null && dp <= -2) score += 5;
     if (dp != null && dp >= 3) score -= 5;
     if (moon.nearSyzygy) score += 3;
-    return { ...sp, inSeason, pct: Math.max(5, Math.min(90, Math.round(score))) };
+    // Zemin uymuyorsa koşullar ne kadar iyi olursa olsun o tür orada beklenmez.
+    const match = habitatMatch(sp.name, spot);
+    const pct = match === 0 ? 3 : Math.max(5, Math.min(90, Math.round(score * (0.35 + 0.65 * match))));
+    return { ...sp, inSeason, match, pct };
   }).sort((a, b) => b.pct - a.pct);
 
   return { list, moon, sstKnown: sst != null };
