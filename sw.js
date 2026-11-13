@@ -1,6 +1,6 @@
 // Uygulama dosyalarını çevrimdışı açılabilsin diye saklar.
 // Tahmin verisi burada saklanmaz; o iş js/sources.js içindeki önbellektedir.
-const CACHE = 'adp-shell-v5';
+const CACHE = 'adp-shell-v6';
 const SHELL = ['./', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/config.js', 'js/sources.js', 'js/compare.js', 'js/analysis.js', 'js/advisor.js', 'js/fish.js',
   'icons/icon-192.png', 'icons/apple-touch-icon.png'];

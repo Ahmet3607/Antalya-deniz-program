@@ -56,7 +56,7 @@ function availableDays() {
 function pickDefaultTime() {
   const s = cur();
   const now = localHourString();
-  if (state.day === today() && s.times.includes(now) && isDaylight(s, now)) return now;
+  if (state.day === today() && s.times.includes(now)) return now;
   const best = bestWindow(s, spot(), state.day, minTime());
   if (best) return s.hours[best.mid.i].time;
   if (state.day === today() && s.times.includes(now)) return now;
@@ -189,8 +189,8 @@ function renderDive(ctx) {
   const ranking = rankSpots(state.series, SPOTS, state.day, minTime()).filter((r) => r.best).slice(0, 3);
   const fish = spearFish(s, i, sp);
 
-  const bestText = !best ? (state.day === today() ? 'Bugün gün ışığı kalmadı' : 'Belirlenemiyor')
-    : best.level === 'no' ? 'Uygun saat yok' : `${hhmm(best.from)}–${endOf(best.to)}`;
+  const bestText = !best ? (state.day === today() ? 'Bugün için saat kalmadı' : 'Belirlenemiyor')
+    : best.level === 'no' ? 'Uygun saat yok' : `${hhmm(best.from)}–${endOf(best.to)}${best.night ? ' (gece)' : ''}`;
   const LVL = { ideal: 'çok uygun', ok: 'uygun', marginal: 'sınırda', no: 'önerilmez' };
 
   el.innerHTML = `
@@ -211,7 +211,7 @@ function renderDive(ctx) {
         <ul class="rows">
           <li><span>${esc(sp.name)} için en iyi saat</span><span>${esc(bestText)}</span></li>
           ${ranking.map((r, n) => `<li><span>${n + 1}. <button type="button" data-spot="${r.spot.id}">${esc(r.spot.name)}</button></span>
-            <span>${hhmm(r.best.from)}–${endOf(r.best.to)} · ${LVL[r.best.level]}</span></li>`).join('')}
+            <span>${hhmm(r.best.from)}–${endOf(r.best.to)}${r.best.night ? ' (gece)' : ''} · ${LVL[r.best.level]}</span></li>`).join('')}
         </ul>
       </div>
       <div>
@@ -352,7 +352,7 @@ function renderRanking() {
     return `<tr class="clickable${r.spot.id === state.spotId ? ' selected' : ''}" data-spot="${r.spot.id}">
       <td>${n + 1}. ${esc(r.spot.name)}</td>
       <td><span class="pill ${r.best.level}">${LVL[r.best.level]}</span></td>
-      <td>${hhmm(r.best.from)}–${endOf(r.best.to)}</td>
+      <td>${hhmm(r.best.from)}–${endOf(r.best.to)}${r.best.night ? ' (gece)' : ''}</td>
       <td>${num(h.localWave)} m</td>
       <td>${esc(windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}</td>
       <td><span class="pill ${vis.cls}">${esc(vis.label)}</span></td></tr>`;
@@ -484,7 +484,7 @@ async function load(force = false) {
     rebuildSeries();
     const days = availableDays();
     if (!state.day || !days.includes(state.day)) {
-      // Bugün gün ışığı kalmadıysa yarından başla.
+      // Bugün için değerlendirilecek saat kalmadıysa yarından başla.
       state.day = days.find((d) => bestWindow(cur(), spot(), d, d === today() ? localHourString() : null)) ?? days[0] ?? today();
       state.time = pickDefaultTime();
     } else if (!state.time) {

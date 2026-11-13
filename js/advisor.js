@@ -270,12 +270,12 @@ export function combined(series, i, spot) {
   return { level: 'none', label: 'Uygun değil', dive, boat };
 }
 
-// Seçilen gün için gün ışığındaki en iyi ardışık 3 saat.
+// Seçilen gün için en iyi ardışık 3 saat (gece saatleri dahil; fenerle dalınabiliyor).
 // minTime verilirse (bugün için şimdiki saat) geçmiş saatler hesaba katılmaz.
 export function bestWindow(series, spot, day, minTime = null) {
   const scored = [];
   series.hours.forEach((h, i) => {
-    if (!h.time.startsWith(day) || !isDaylight(series, h.time) || (minTime && h.time < minTime)) return;
+    if (!h.time.startsWith(day) || (minTime && h.time < minTime)) return;
     const v = diveVerdict(series, i, spot);
     if (v.score != null) scored.push({ i, v });
   });
@@ -295,6 +295,7 @@ export function bestWindow(series, spot, day, minTime = null) {
     to: series.hours[best.win[best.win.length - 1].i].time,
     level: worst,
     mid: best.win[Math.floor(best.win.length / 2)],
+    night: best.win.every((x) => !isDaylight(series, series.hours[x.i].time)),
   };
 }
 
