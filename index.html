@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b3a53">
+  <title>Antalya Deniz Programı</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Antalya Deniz Programı</h1>
+      <p id="updated" class="muted">Yükleniyor…</p>
+    </div>
+    <button id="refresh" type="button">Yenile</button>
+  </header>
+
+  <main>
+    <section class="controls">
+      <label>Konum
+        <select id="spot"></select>
+      </label>
+      <div id="days" class="chips" role="group" aria-label="Gün"></div>
+    </section>
+
+    <div id="alerts"></div>
+
+    <section>
+      <h2>Akıllı sonuç <span id="when" class="muted"></span></h2>
+      <div id="verdicts" class="cards"></div>
+    </section>
+
+    <section>
+      <h2>Saatlik durum</h2>
+      <p class="muted small">Renk zıpkın uygunluğunu gösterir. Bir saate dokun, aşağıdaki karşılaştırma o saate geçer.</p>
+      <div id="hours" class="hours"></div>
+    </section>
+
+    <section>
+      <h2>Kaynak karşılaştırması <span id="cmpWhen" class="muted"></span></h2>
+      <div id="summary" class="summary"></div>
+      <div class="scroll"><table id="cmp"></table></div>
+      <p class="muted small">Ağ. ort. = çözünürlük, güncellik ve model noktasının uzaklığına göre ağırlıklı ortalama. “–” = o kaynak bu değeri vermiyor.</p>
+    </section>
+
+    <section>
+      <h2>Hangi koy daha iyi? <span id="rankWhen" class="muted"></span></h2>
+      <div class="scroll"><table id="rank"></table></div>
+      <p class="muted small">Koy içi dalga, açık deniz tahmininin koyun açık olduğu yöne göre düzeltilmiş halidir. Konum koordinatları ve açıklık yönleri yaklaşıktır.</p>
+    </section>
+
+    <section>
+      <h2>Kaynak durumu</h2>
+      <div class="scroll"><table id="sources"></table></div>
+      <p id="licenses" class="muted small"></p>
+    </section>
+
+    <section>
+      <h2>Dalış günlüğü</h2>
+      <p class="muted small">Dönüşte gerçekte ne gördüğünü kaydet. Kayıtlar bu cihazda saklanır ve tahminin ne kadar tuttuğunu gösterir.</p>
+      <form id="logForm" class="logform">
+        <label>Gerçek görüş (m) <input id="logVis" type="number" min="0" max="50" step="1" required></label>
+        <label>Gerçek dalga (m) <input id="logWave" type="number" min="0" max="5" step="0.1"></label>
+        <label class="grow">Not <input id="logNote" type="text" maxlength="120"></label>
+        <button type="submit">Seçili konum ve saat için kaydet</button>
+      </form>
+      <div id="logSummary" class="muted small"></div>
+      <div class="scroll"><table id="log"></table></div>
+    </section>
+
+    <section>
+      <h2>Ek kaynak: Stormglass (isteğe bağlı)</h2>
+      <p class="muted small">Ücretsiz Stormglass anahtarı günde 10 istekle sınırlıdır ve ticari kullanıma izin vermez. Anahtar yalnızca bu cihazda saklanır; veri 6 saat önbellekte tutulur ve sadece seçili konum için çekilir.</p>
+      <form id="sgForm" class="logform">
+        <label class="grow">API anahtarı <input id="sgKey" type="password" autocomplete="off"></label>
+        <button type="submit">Kaydet</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>Bu program tahmin üretir, ölçüm yapmaz. Denize çıkmadan önce resmî denizcilik bültenini ve kendi gözlemini esas al. Balık türü, boy ve dönem yasaklarını güncel su ürünleri tebliğinden kontrol et.</p>
+    <p>Hava ve deniz verisi: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · Modeller: Météo-France, DWD, ECMWF, NOAA · E.U. Copernicus Marine Service Information.</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
