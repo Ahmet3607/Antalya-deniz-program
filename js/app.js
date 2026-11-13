@@ -143,7 +143,17 @@ function renderStatus(ctx) {
   el.className = `status t-${TONE[c.level]}`;
   el.innerHTML = `<div class="when">${esc(spot().name)} · ${esc(dayLabel(state.day))} · ${hhmm(state.time)}</div>
     <div class="title">${titles[c.level]}</div>
-    <div class="line">${esc(line.charAt(0).toLocaleUpperCase('tr-TR') + line.slice(1))}</div>`;
+    <div class="line">${esc(line.charAt(0).toLocaleUpperCase('tr-TR') + line.slice(1))}</div>${why(c)}`;
+}
+
+// Zıpkın ya da tekne uygun değilse nedenini açıkça yazar.
+function why(c) {
+  const blocks = [];
+  const diveOk = c.dive.level === 'ideal' || c.dive.level === 'ok';
+  const boatOk = c.boat.level === 'good';
+  if (!diveOk && c.dive.notes.length) blocks.push(['Zıpkın neden ' + (c.dive.level === 'marginal' ? 'sınırda' : 'önerilmiyor'), c.dive.notes]);
+  if (!boatOk && c.boat.notes.length) blocks.push(['Tekne neden ' + (c.boat.level === 'bad' ? 'önerilmiyor' : 'dikkat istiyor'), c.boat.notes]);
+  return blocks.map(([title, notes]) => `<div class="why"><b>${esc(title)}</b><ul>${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`).join('');
 }
 
 function renderHours() {
@@ -183,7 +193,7 @@ function renderDive(ctx) {
 
   el.innerHTML = `
     <div class="head"><h2>Zıpkın</h2>${badge(d.title, DIVE_TONE[d.level])}</div>
-    ${d.notes.length ? `<p class="lead">${esc(d.notes.join(' '))}</p>` : ''}
+    ${d.notes.length ? `<ul class="reasons">${d.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
     <dl class="stats">
       ${stat('Su altı görüşü', d.vis.label, d.vis.range ? `tahmini ${d.vis.range}` : '')}
       ${stat('Koy içi dalga', h.localWave == null ? 'Veri yok' : `${num(h.localWave)} m`, h.dv.wave_height != null ? `açıkta ${num(h.dv.wave_height)} m` : '')}
@@ -229,7 +239,7 @@ function renderBoat(ctx) {
   const vis = h.dv.visibility;
   el.innerHTML = `
     <div class="head"><h2>Tekne</h2>${badge(b.title, BOAT_TONE[b.level])}</div>
-    ${b.notes.length ? `<p class="lead">${esc(b.notes.join(' '))}</p>` : ''}
+    ${b.notes.length ? `<ul class="reasons">${b.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
     <dl class="stats">
       ${stat('Açık denizde dalga', h.dv.wave_height == null ? 'Veri yok' : `${num(h.dv.wave_height)} m`, h.dv.wave_direction != null ? `${dirName(h.dv.wave_direction)} yönünden${h.dv.wave_period != null ? `, ${num(h.dv.wave_period, 0)} sn arayla` : ''}` : '')}
       ${stat('Rüzgâr', h.dv.wind_speed_10m == null ? 'Veri yok' : windText(h.dv.wind_speed_10m, h.dv.wind_direction_10m))}

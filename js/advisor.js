@@ -52,6 +52,22 @@ export function dayRain(series, day) {
 
 // ---------- tekne ----------
 
+// Eşik aşıldığında kullanıcıya nedenini ve sonucunu söyleyen cümleler.
+const WHY_BOAT = {
+  wave: {
+    caution: (v) => `Açıkta dalga ${n1(v)} m: tekne sallanır, demirde durmak ve dalıcı almak zorlaşır.`,
+    bad: (v) => `Açıkta dalga ${n1(v)} m: tekne sert vurur, demir tutmaz, dalıcıyı tekneye almak tehlikeli olur.`,
+  },
+  wind: {
+    caution: (v) => `Rüzgâr ${n0(v)} km/sa: tekne demirde döner ve sürüklenir, serpinti yapar.`,
+    bad: (v) => `Rüzgâr ${n0(v)} km/sa: dalgayı hızla büyütür, tekneyi kontrol etmek ve limana dönmek zorlaşır.`,
+  },
+  gust: {
+    caution: (v) => `Hamleler ${n0(v)} km/sa hıza ulaşıyor: ani sarsıntılara hazırlıklı ol.`,
+    bad: (v) => `Hamleler ${n0(v)} km/sa hıza ulaşıyor: ani darbeler tekneyi yatırır, güvertede durmak tehlikeli.`,
+  },
+};
+
 export function boatVerdict(h) {
   const wave = h.dv.wave_height;
   const wind = h.dv.wind_speed_10m;
@@ -70,22 +86,27 @@ export function boatVerdict(h) {
     if (val == null) {
       notes.push(`${text} verisi yok; karar eksik bilgiyle verildi.`);
       bump('caution');
-    } else if (val > BOAT_LIMITS.caution[key]) bump('bad');
-    else if (val > BOAT_LIMITS.good[key]) bump('caution');
+    } else if (val > BOAT_LIMITS.caution[key]) {
+      bump('bad');
+      notes.push(WHY_BOAT[key].bad(val));
+    } else if (val > BOAT_LIMITS.good[key]) {
+      bump('caution');
+      notes.push(WHY_BOAT[key].caution(val));
+    }
   };
   check(wave, 'wave', 'Dalga');
   check(wind, 'wind', 'Rüzgâr');
   check(gust, 'gust', 'Hamle');
   if (wave != null && period != null && wave >= 1 && period < 4.5) {
-    notes.push('Dalga kısa aralıklı ve dik; seyir sert olur.');
+    notes.push('Dalgalar sık ve dik geliyor: tekne baş vurur, seyir sert ve yorucu olur.');
     bump('caution');
   }
   const rain = rainInfo(h);
   if (rain.thunder) {
-    notes.push('Gök gürültülü fırtına riski var.');
+    notes.push('Gök gürültülü fırtına riski var: yıldırım ve ani sert rüzgâr nedeniyle açıkta olmak tehlikeli.');
     bump('bad');
   } else if (rain.cls === 'heavy' || rain.cls === 'violent') {
-    notes.push('Kuvvetli yağış görüşü düşürür.');
+    notes.push('Kuvvetli yağış var: görüş düşer, diğer tekneleri ve kıyıyı seçmek zorlaşır.');
     bump('caution');
   }
   if (['wave_height', 'wind_speed_10m'].some((k) => h.cmp[k].agreement === 'poor')) {
@@ -199,17 +220,21 @@ export function diveVerdict(series, i, spot) {
   const rwind = rank(wind, 'wind');
   const rc = rank(cur, 'current');
   let r = Math.max(rw, rwind, rc);
-  if (rw >= 2) notes.push('Koy içinde dalga fazla.');
-  if (rwind >= 2) notes.push('Rüzgâr kuvvetli.');
-  if (cur == null) notes.push('Akıntı verisi yok.');
-  else if (rc >= 2) notes.push('Akıntı kuvvetli.');
-  if (vis.cls === 'murky') { r = Math.max(r, 2); notes.push('Su bulanık.'); }
-  if (vis.cls === 'bad') { r = 3; notes.push('Su çok bulanık.'); }
-  if (boat.level === 'bad') { r = 3; notes.push('Tekneyle çıkış önerilmiyor.'); }
-  if (rain.thunder) { r = 3; notes.push('Gök gürültülü fırtına riski var.'); }
-  else if (rain.cls === 'heavy' || rain.cls === 'violent') { r = Math.max(r, 2); notes.push('Kuvvetli yağış var.'); }
   const daylight = isDaylight(series, h.time);
-  if (!daylight) { r = 3; notes.push('Gün ışığı yok.'); }
+  // En belirleyici neden en başta olsun.
+  if (!daylight) { r = 3; notes.push('Gün ışığı yok: su altında hiçbir şey göremezsin, tekne de seni göremez.'); }
+  if (rain.thunder) { r = 3; notes.push('Gök gürültülü fırtına riski var: yıldırım nedeniyle suda olmak tehlikeli.'); }
+  if (rw === 3) notes.push(`Koy içinde dalga sert (${n1(lw)} m): seni çabuk yorar, kayalara savurur, dibi kaldırıp suyu bulandırır.`);
+  else if (rw === 2) notes.push(`Koy içinde dalga var (${n1(lw)} m): yüzeyde nefes almak zorlaşır, sığlarda su bulanır.`);
+  if (rwind === 3) notes.push(`Rüzgâr sert (${n0(wind)} km/sa): yüzeyde seni ve şamandırayı sürükler, tekneye dönmek zorlaşır.`);
+  else if (rwind === 2) notes.push(`Rüzgâr kuvvetli (${n0(wind)} km/sa): yüzey çırpıntılı olur, şamandırayı sürükler.`);
+  if (cur == null) notes.push('Akıntı verisi yok; suya girince kendin kontrol et.');
+  else if (rc === 3) notes.push(`Akıntı çok kuvvetli (${n1(cur)} kn): karşı yüzemezsin, tekneden uzaklaştırır.`);
+  else if (rc === 2) notes.push(`Akıntı kuvvetli (${n1(cur)} kn): yüzmek yorar, dalış süren kısalır.`);
+  if (vis.cls === 'murky') { r = Math.max(r, 2); notes.push(`Su bulanık (tahmini ${vis.range}): balığı geç görürsün, av verimi düşer.`); }
+  if (vis.cls === 'bad') { r = 3; notes.push(`Su çok bulanık (tahmini ${vis.range}): hedefi seçemezsin, zıpkın kullanmak güvenli olmaz.`); }
+  if (boat.level === 'bad') { r = 3; notes.push('Deniz tekneyle çıkmaya uygun değil; dalış noktasına ulaşmak ve geri dönmek riskli.'); }
+  if (!rain.thunder && (rain.cls === 'heavy' || rain.cls === 'violent')) { r = Math.max(r, 2); notes.push('Kuvvetli yağış var: yüzeyde görüş düşer, dere ağızlarından bulanık su gelir.'); }
   const level = ['ideal', 'ok', 'marginal', 'no'][r];
   const title = { ideal: 'Çok uygun', ok: 'Uygun', marginal: 'Sınırda', no: 'Önerilmez' }[level];
 
