@@ -299,6 +299,44 @@ export function bestWindow(series, spot, day, minTime = null) {
   };
 }
 
+// Haftaya bakış: her gün için kaç saat uygun, en iyi pencere, en yüksek dalga/rüzgâr ve yağış.
+// Yalnızca bilgi verir; seçimi değiştirmez.
+export function weekOutlook(series, spot, days, nowTime) {
+  const out = days.map((day) => {
+    const c = { both: 0, tekne: 0, zipkin: 0, total: 0 };
+    let maxWave = null;
+    let maxWind = null;
+    series.hours.forEach((h, i) => {
+      if (!h.time.startsWith(day) || h.time < nowTime) return;
+      const x = combined(series, i, spot);
+      if (x.level === 'unknown') return;
+      c.total += 1;
+      if (x.level === 'both') c.both += 1;
+      else if (x.label === 'Yalnız tekne') c.tekne += 1;
+      else if (x.label === 'Yalnız zıpkın') c.zipkin += 1;
+      if (h.dv.wave_height != null) maxWave = Math.max(maxWave ?? 0, h.dv.wave_height);
+      if (h.dv.wind_speed_10m != null) maxWind = Math.max(maxWind ?? 0, h.dv.wind_speed_10m);
+    });
+    const rain = dayRain(series, day);
+    const best = bestWindow(series, spot, day, day === nowTime.slice(0, 10) ? nowTime : null);
+    let level = 'unknown';
+    let label = 'Veri yok';
+    if (c.total > 0) {
+      if (c.both >= 3) { level = 'both'; label = 'Zıpkın ve tekne'; }
+      else if (c.tekne + c.both >= 3 || c.zipkin + c.both >= 3) {
+        level = 'one';
+        label = c.tekne >= c.zipkin ? 'Yalnız tekne' : 'Yalnız zıpkın';
+      } else { level = 'none'; label = 'Uygun değil'; }
+    }
+    return { day, level, label, counts: c, maxWave, maxWind, rain, best };
+  });
+  const good = out.filter((d) => d.level === 'both');
+  const top = good.length
+    ? good.reduce((a, d) => (d.counts.both > a.counts.both || (d.counts.both === a.counts.both && (d.best?.score ?? 0) > (a.best?.score ?? 0)) ? d : a))
+    : null;
+  return { days: out, top, good };
+}
+
 // Tüm koyları seçilen gün için sıralar: önce uygunluk düzeyi, sonra puan.
 export function rankSpots(allSeries, spots, day, minTime = null) {
   const order = ['ideal', 'ok', 'marginal', 'no'];

@@ -8,6 +8,7 @@ Ekran yukarıdan aşağıya şöyle dizilir:
 
 1. **Konum, tarih ve saat seçimi.** Bugünden 7 gün sonrasına kadar istenen gün ve saat seçilir.
 2. **Gün boyu saatler.** Zıpkın ve tekne ikisi de uygunsa yeşil, yalnız biri uygunsa sarı (hangisi olduğu yazar), ikisi de uygun değilse kırmızı. Üstünde gün doğumu ve batımı saati yazar. Gece saatleri zıpkın için engel sayılmaz; fener gerektiği not edilir.
+2a. **Haftaya bakış.** Önümüzdeki günlerin her biri için durum, uygun saat sayısı, en iyi aralık, en yüksek dalga, en sert rüzgâr ve yağış. Yalnızca bilgi verir; seçimi değiştirmez.
 3. **Zıpkın.** Su altı görüşü, koy içi dalga, rüzgâr, akıntı, su sıcaklığı, yağış; en iyi saat, en iyi koylar ve türlere göre balık aktivitesi tahmini.
 4. **Tekne.** Dalga, rüzgâr, hamle, yağış, hava görüşü, en sakin bölge; yönteme göre av önerileri (derinlik, gelebilecek balık, yem ya da jig).
 5. **Yağış.** Günün yağış özeti, şiddeti ve kaç modelin yağış gösterdiği; altında saatlik yağış grafiği.

@@ -257,3 +257,6 @@ footer {
   display: grid;
   gap: 6px;
 }
+
+.picker label b { color: #fff; font-weight: 650; text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
+.week td { vertical-align: middle; }

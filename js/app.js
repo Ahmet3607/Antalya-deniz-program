@@ -2,7 +2,7 @@ import { SPOTS, VARIABLES } from './config.js';
 import { loadAll, loadStormglass, localHourString, getStormglassKey, setStormglassKey } from './sources.js';
 import { buildSeries } from './analysis.js';
 import { AGREEMENT_LABEL, describe, dirName, windName, windText } from './compare.js';
-import { combined, bestWindow, rankSpots, calmestSpot, dayRain, rainInfo, isDaylight, sunTimes } from './advisor.js';
+import { combined, bestWindow, rankSpots, calmestSpot, dayRain, rainInfo, isDaylight, sunTimes, weekOutlook } from './advisor.js';
 import { spearFish, boatFishing } from './fish.js';
 
 const $ = (id) => document.getElementById(id);
@@ -49,6 +49,14 @@ function dayLabel(day) {
   return date;
 }
 
+// "Cumartesi" ya da "Bugün, Cumartesi"
+function dayOnly(day) {
+  const d = new Date(day + 'T00:00:00Z');
+  const diff = Math.round((d - new Date(today() + 'T00:00:00Z')) / 86400000);
+  const name = DAY_NAMES[d.getUTCDay()];
+  return diff === 0 ? `Bugün, ${name}` : diff === 1 ? `Yarın, ${name}` : name;
+}
+
 function availableDays() {
   return [...new Set(cur().times.map((t) => t.slice(0, 10)))].filter((d) => d >= today());
 }
@@ -87,6 +95,7 @@ function renderPicker() {
     date.max = days[days.length - 1];
   }
   date.value = state.day ?? '';
+  $('dateDay').textContent = state.day ? `· ${dayOnly(state.day)}` : '';
   const sel = state.time ? state.time.slice(11, 13) : '';
   $('hour').innerHTML = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'))
     .map((h) => `<option value="${h}"${h === sel ? ' selected' : ''}>${h}:00</option>`).join('');
@@ -171,6 +180,48 @@ function renderHours() {
   const sun = sunTimes(s, state.day);
   $('sun').textContent = sun ? `Gün doğumu ${sun.rise} · Gün batımı ${sun.set}` : '';
   $('hours').innerHTML = out.join('') || '<p class="muted">Bu gün için veri yok.</p>';
+}
+
+// ---------- haftaya bakış (yalnızca bilgi; seçimi değiştirmez) ----------
+
+function renderWeek() {
+  const days = availableDays();
+  const w = weekOutlook(cur(), spot(), days, localHourString());
+  // Cümle içinde gün adı: "bugün", "yarın", "Salı"; bugünle aynı ada denk gelen gün tarihle ayrılır.
+  const todayName = dayOnly(today()).replace('Bugün, ', '');
+  const names = (list) => list.map((d) => {
+    if (d.day === today()) return 'bugün';
+    const n = dayOnly(d.day);
+    if (n.startsWith('Yarın')) return 'yarın';
+    return n === todayName ? `${n} (${Number(d.day.slice(8))} ${MONTHS[Number(d.day.slice(5, 7)) - 1]})` : n;
+  });
+  let lead;
+  if (w.days.every((d) => d.level === 'unknown')) lead = 'Haftalık değerlendirme için veri yok.';
+  else if (!w.top) {
+    const one = w.days.filter((d) => d.level === 'one');
+    lead = one.length ? `Bu hafta zıpkın ve tekne için birlikte uygun gün görünmüyor. Kısmen uygun günler: ${names(one).join(', ')}.`
+      : 'Bu hafta uygun gün görünmüyor.';
+  } else {
+    const others = w.good.filter((d) => d !== w.top);
+    lead = `En iyi gün ${names([w.top])[0]}: ${w.top.counts.both} saat hem zıpkın hem tekne için uygun.`
+      + (others.length ? ` Diğer iyi günler: ${names(others).join(', ')}.` : '');
+  }
+  const rainText = (r) => (!r.known ? 'veri yok' : r.total < 0.1 ? 'yok' : `${num(r.total)} mm${r.thunder ? ', fırtına' : ''}`);
+  $('week').innerHTML = `
+    <div class="head"><h2>Haftaya bakış <span class="muted">${esc(spot().name)}</span></h2></div>
+    <p class="lead">${esc(lead)}</p>
+    <div class="scroll"><table class="week">
+      <thead><tr><th>Gün</th><th>Durum</th><th>Uygun saat</th><th>En iyi aralık</th><th>En yüksek dalga</th><th>En sert rüzgâr</th><th>Yağış</th></tr></thead>
+      <tbody>${w.days.map((d) => `<tr${d.day === state.day ? ' class="selected"' : ''}>
+        <td>${esc(dayOnly(d.day))}<br><span class="muted">${Number(d.day.slice(8))} ${MONTHS[Number(d.day.slice(5, 7)) - 1]}</span></td>
+        <td><span class="badge t-${TONE[d.level]}">${esc(d.label)}</span></td>
+        <td>${d.level === 'unknown' ? '–' : `${d.counts.both} ikisi${d.counts.tekne ? ` · ${d.counts.tekne} tekne` : ''}${d.counts.zipkin ? ` · ${d.counts.zipkin} zıpkın` : ''}`}</td>
+        <td>${d.best && d.best.level !== 'no' ? `${hhmm(d.best.from)}–${endOf(d.best.to)}${d.best.night ? ' (gece)' : ''}` : '–'}</td>
+        <td>${d.maxWave == null ? '–' : `${num(d.maxWave)} m`}</td>
+        <td>${d.maxWind == null ? '–' : `${num(d.maxWind, 0)} km/sa`}</td>
+        <td>${esc(rainText(d.rain))}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <p class="note">Yalnızca bilgi içindir; seçtiğin tarih ve saati değiştirmez. Uzak günlerde tahmin daha belirsizdir ve bazı modeller 5 günden sonrasını vermez.</p>`;
 }
 
 // ---------- zıpkın ----------
@@ -457,6 +508,7 @@ function renderAll() {
   renderAlerts();
   renderStatus(ctx);
   renderHours();
+  renderWeek();
   renderDive(ctx);
   renderBoat(ctx);
   renderRain(ctx);
