@@ -1,11 +1,56 @@
-// Akıllı sonuç: tekne, zıpkınla dalış, su altı görüşü, balık aktivitesi, koy ve saat seçimi.
+// Akıllı sonuç: tekne, zıpkınla dalış, su altı görüşü, yağış, koy ve saat seçimi.
 // Buradaki her şey kural tabanlı TAHMİNDİR; ölçüm değildir.
 
 import { BOAT_LIMITS, DIVE_LIMITS } from './config.js';
-import { compass, angDiff } from './compare.js';
+import { angDiff } from './compare.js';
 
 const n1 = (v) => v.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const n0 = (v) => Math.round(v).toLocaleString('tr-TR');
+
+// ---------- yağış ----------
+
+// Saatlik yağış: modellerin ortalaması, en yükseği ve kaç modelin yağış gösterdiği.
+export function rainInfo(h) {
+  const c = h.cmp.precipitation;
+  const thunder = h.weatherCode != null && h.weatherCode >= 95;
+  if (!c || c.count === 0) return { known: false, mm: null, max: null, models: 0, wet: 0, cls: 'unknown', label: 'veri yok', thunder };
+  const wet = h.entries.precipitation.filter((e) => e.value != null && e.value >= 0.1).length;
+  const mm = c.mean;
+  let cls = 'none';
+  let label = 'yağış yok';
+  if (mm >= 10) { cls = 'violent'; label = 'çok kuvvetli sağanak'; }
+  else if (mm >= 4) { cls = 'heavy'; label = 'kuvvetli yağmur'; }
+  else if (mm >= 1) { cls = 'moderate'; label = 'orta şiddette yağmur'; }
+  else if (mm >= 0.1) { cls = 'light'; label = 'hafif yağmur'; }
+  else if (wet > 0) { cls = 'possible'; label = 'yağış ihtimali düşük'; }
+  if (thunder) label += ', gök gürültülü';
+  return { known: true, mm, max: c.max, models: c.count, wet, cls, label, thunder };
+}
+
+// Seçilen günün yağış özeti.
+export function dayRain(series, day) {
+  const hours = series.hours.filter((h) => h.time.startsWith(day)).map((h) => ({ time: h.time, ...rainInfo(h) }));
+  const known = hours.filter((h) => h.known);
+  if (known.length === 0) return { known: false, hours, text: 'Bu gün için yağış verisi yok.' };
+  const total = known.reduce((a, h) => a + h.mm, 0);
+  const wetHours = known.filter((h) => h.mm >= 0.1);
+  const peak = known.reduce((a, h) => (h.mm > a.mm ? h : a), known[0]);
+  const thunder = known.some((h) => h.thunder);
+  let text;
+  if (wetHours.length === 0) {
+    text = known.some((h) => h.wet > 0)
+      ? 'Yağış beklenmiyor; yalnızca tek tük model çok hafif yağış gösteriyor.'
+      : 'Yağış beklenmiyor.';
+  } else {
+    const from = wetHours[0].time.slice(11, 16);
+    const to = wetHours[wetHours.length - 1].time.slice(11, 13) + ':59';
+    text = `${from}–${to} arasında ${wetHours.length} saat yağış bekleniyor. En yoğun saat ${peak.time.slice(11, 16)}: ${peak.label}, ${n1(peak.mm)} mm.`;
+  }
+  if (thunder) text += ' Gök gürültülü fırtına riski var.';
+  return { known: true, hours, total, wetHours: wetHours.length, peak, thunder, text };
+}
+
+// ---------- tekne ----------
 
 export function boatVerdict(h) {
   const wave = h.dv.wave_height;
@@ -13,98 +58,96 @@ export function boatVerdict(h) {
   const gust = h.dv.wind_gusts_10m;
   const period = h.dv.wave_period;
   if (wave == null && wind == null) {
-    return { level: 'unknown', title: 'Karar verilemiyor', reasons: ['Dalga ve rüzgâr verisi alınamadı.'] };
+    return { level: 'unknown', title: 'Karar verilemiyor', notes: ['Dalga ve rüzgâr verisi alınamadı.'] };
   }
-  const reasons = [];
+  const notes = [];
+  const order = ['good', 'caution', 'bad'];
   let level = 'good';
-  const bump = (to) => {
-    const order = ['good', 'caution', 'bad'];
-    if (order.indexOf(to) > order.indexOf(level)) level = to;
-  };
+  const bump = (to) => { if (order.indexOf(to) > order.indexOf(level)) level = to; };
   const check = (val, key, text) => {
     if (val == null) {
-      reasons.push(`${text} verisi yok.`);
+      notes.push(`${text} verisi yok; karar eksik bilgiyle verildi.`);
       bump('caution');
-      return;
-    }
-    if (val > BOAT_LIMITS.caution[key]) bump('bad');
+    } else if (val > BOAT_LIMITS.caution[key]) bump('bad');
     else if (val > BOAT_LIMITS.good[key]) bump('caution');
   };
   check(wave, 'wave', 'Dalga');
   check(wind, 'wind', 'Rüzgâr');
   check(gust, 'gust', 'Hamle');
-  if (wave != null) reasons.push(`Açık denizde dalga ${n1(wave)} m${period != null ? `, periyot ${n1(period)} sn` : ''}.`);
-  if (wind != null) reasons.push(`Rüzgâr ${n0(wind)} kn ${compass(h.dv.wind_direction_10m)}${gust != null ? `, hamle ${n0(gust)} kn` : ''}.`);
   if (wave != null && period != null && wave >= 1 && period < 4.5) {
-    reasons.push('Dalga kısa periyotlu ve dik; seyir sert olur.');
+    notes.push('Dalga kısa aralıklı ve dik; seyir sert olur.');
     bump('caution');
   }
-  if (h.weatherCode != null && h.weatherCode >= 95) {
-    reasons.push('En az bir model gök gürültülü fırtına gösteriyor.');
+  const rain = rainInfo(h);
+  if (rain.thunder) {
+    notes.push('Gök gürültülü fırtına riski var.');
     bump('bad');
+  } else if (rain.cls === 'heavy' || rain.cls === 'violent') {
+    notes.push('Kuvvetli yağış görüşü düşürür.');
+    bump('caution');
   }
-  const poor = ['wave_height', 'wind_speed_10m'].filter((k) => h.cmp[k].agreement === 'poor');
-  if (poor.length) {
-    reasons.push('Kaynaklar ayrışıyor; karar en yüksek tahmine göre verildi.');
-    if (level === 'good') level = 'caution';
+  if (['wave_height', 'wind_speed_10m'].some((k) => h.cmp[k].agreement === 'poor')) {
+    notes.push('Kaynaklar birbirini tutmuyor; karar en yüksek tahmine göre verildi.');
+    bump('caution');
   }
-  const title = { good: 'Tekneyle çıkmak mantıklı', caution: 'Çıkılır ama dikkatli ol', bad: 'Çıkmak önerilmez' }[level];
-  return { level, title, reasons };
+  const title = { good: 'Çıkmak mantıklı', caution: 'Çıkılır, dikkatli ol', bad: 'Çıkmak önerilmez' }[level];
+  return { level, title, notes };
 }
 
-// Su altı görüşü tahmini. Girdi: son 72 saatin koy içi dalgası, yağış, dere etkisi, rüzgâr.
+// ---------- su altı görüşü ----------
+
+// Girdi: son 72 saatin koy içi dalgası, yağış, dere etkisi, rüzgâr.
 export function visibilityEstimate(series, i, spot) {
   const h = series.hours[i];
   if (h.localWave == null) {
-    return { cls: 'unknown', label: 'Tahmin edilemiyor', range: '', score: null, reasons: ['Dalga verisi yok.'], confidence: 'yok' };
+    return { cls: 'unknown', label: 'Tahmin edilemiyor', range: '', score: null, notes: ['Dalga verisi yok.'], confidence: 'yok' };
   }
   let stirred = h.localWave;
   let rain72 = 0;
   let rainKnown = false;
   for (let j = Math.max(0, i - 72); j < i; j++) {
     const p = series.hours[j];
-    const age = i - j;
-    if (p.localWave != null) stirred = Math.max(stirred, p.localWave * Math.exp(-age / 36));
+    if (p.localWave != null) stirred = Math.max(stirred, p.localWave * Math.exp(-(i - j) / 36));
     if (p.rain != null) {
       rain72 += p.rain;
       rainKnown = true;
     }
   }
-  const reasons = [];
+  const notes = [];
   let score = 0;
   if (stirred >= 1.5) score += 75;
   else if (stirred >= 1.0) score += 55;
   else if (stirred >= 0.6) score += 35;
   else if (stirred >= 0.3) score += 15;
   if (stirred >= 0.6) {
-    reasons.push(stirred > h.localWave + 0.05
-      ? `Son günlerde koyda ${n1(stirred)} m etkili dalga vardı; dip kalkmış olabilir.`
-      : `Koy içinde şu an yaklaşık ${n1(h.localWave)} m dalga var.`);
+    notes.push(stirred > h.localWave + 0.05
+      ? `Önceki günlerde koyda ${n1(stirred)} m etkili dalga vardı; dip kalkmış olabilir.`
+      : `Koy içinde yaklaşık ${n1(h.localWave)} m dalga var; su karışık.`);
   } else if (stirred >= 0.3) {
-    reasons.push(`Koyda hafif dalga etkisi var (~${n1(stirred)} m); sığlarda az bulanıklık olabilir.`);
+    notes.push('Hafif dalga var; sığlarda az bulanıklık olabilir.');
   } else {
-    reasons.push('Son 3 günde koyu karıştıracak dalga görünmüyor.');
+    notes.push('Son 3 günde suyu karıştıracak dalga yok.');
   }
   if (rainKnown) {
-    let rainPts = 0;
-    if (rain72 >= 30) rainPts = 40;
-    else if (rain72 >= 10) rainPts = 25;
-    else if (rain72 >= 3) rainPts = 10;
-    const add = rainPts * spot.river;
+    let pts = 0;
+    if (rain72 >= 30) pts = 40;
+    else if (rain72 >= 10) pts = 25;
+    else if (rain72 >= 3) pts = 10;
+    const add = pts * spot.river;
     score += add;
-    if (add >= 8) reasons.push(`Son 3 günde ~${n0(rain72)} mm yağış; dere ağzı etkisiyle bulanıklık beklenir.`);
-    else if (rain72 >= 10) reasons.push(`Son 3 günde ~${n0(rain72)} mm yağış var ama bu noktada dere etkisi az.`);
+    if (add >= 8) notes.push(`Son 3 günde ${n0(rain72)} mm yağış düştü; dere ağzı bulanıklık taşır.`);
+    else if (rain72 >= 10) notes.push(`Son 3 günde ${n0(rain72)} mm yağış var ama burada dere etkisi az.`);
   } else {
-    reasons.push('Yağış verisi alınamadı; tahmin eksik bilgiyle yapıldı.');
+    notes.push('Yağış verisi alınamadı; tahmin eksik bilgiyle yapıldı.');
   }
   const wind = h.dv.wind_speed_10m;
   const wdir = h.dv.wind_direction_10m;
-  if (wind != null && wdir != null && wind >= 15) {
+  if (wind != null && wdir != null && wind >= 28) {
     const [a, b] = spot.open;
     const mid = (a + ((b - a + 360) % 360) / 2) % 360;
     if (angDiff(wdir, mid) <= 60) {
       score += 10;
-      reasons.push('Rüzgâr kıyıya doğru esiyor; yüzey çalkantılı.');
+      notes.push('Rüzgâr kıyıya doğru esiyor; yüzey çalkantılı.');
     }
   }
   score = Math.min(100, score);
@@ -117,30 +160,32 @@ export function visibilityEstimate(series, i, spot) {
   else { cls = 'bad'; label = 'Çok bulanık'; range = '4 m altı'; }
   const waveCmp = h.cmp.wave_height;
   const confidence = waveCmp.count >= 3 && waveCmp.agreement === 'good' && rainKnown ? 'orta' : 'düşük';
-  return { cls, label, range, score, reasons, confidence };
+  return { cls, label, range, score, notes, confidence };
 }
 
 export function isDaylight(series, time) {
-  if (!series.daily) {
+  const d = series.daily ? series.daily.time.indexOf(time.slice(0, 10)) : -1;
+  if (d < 0) {
     const hr = Number(time.slice(11, 13));
     return hr >= 7 && hr <= 17;
   }
-  const d = series.daily.time.indexOf(time.slice(0, 10));
-  if (d < 0) return false;
   return time >= series.daily.sunrise[d].slice(0, 13) + ':00' && time <= series.daily.sunset[d];
 }
+
+// ---------- zıpkın ----------
 
 export function diveVerdict(series, i, spot) {
   const h = series.hours[i];
   const boat = boatVerdict(h);
   const vis = visibilityEstimate(series, i, spot);
+  const rain = rainInfo(h);
   const lw = h.localWave;
   const wind = h.dv.wind_speed_10m;
   const cur = h.dv.ocean_current_velocity;
-  const reasons = [];
   if (lw == null || wind == null) {
-    return { level: 'unknown', title: 'Karar verilemiyor', reasons: ['Dalga ya da rüzgâr verisi eksik.'], score: null, vis, boat };
+    return { level: 'unknown', title: 'Karar verilemiyor', notes: ['Dalga ya da rüzgâr verisi eksik.'], score: null, vis, boat, rain };
   }
+  const notes = [];
   const rank = (val, key) => {
     if (val == null) return 1; // bilinmiyorsa ideal sayma
     if (val <= DIVE_LIMITS.ideal[key]) return 0;
@@ -148,46 +193,57 @@ export function diveVerdict(series, i, spot) {
     if (val <= DIVE_LIMITS.marginal[key]) return 2;
     return 3;
   };
-  let r = Math.max(rank(lw, 'wave'), rank(wind, 'wind'), rank(cur, 'current'));
-  reasons.push(`Koy içi tahmini dalga ${n1(lw)} m (açıkta ${n1(h.dv.wave_height)} m, koy ${h.exposure >= 0.95 ? 'bu yöne açık' : 'kısmen korunaklı'}).`);
-  reasons.push(`Rüzgâr ${n0(wind)} kn ${compass(h.dv.wind_direction_10m)}.`);
-  if (cur != null) reasons.push(`Akıntı ${n1(cur)} kn${cur > DIVE_LIMITS.ok.current ? ' – kuvvetli' : ''}.`);
-  else reasons.push('Akıntı verisi yok.');
-  reasons.push(`Görüş tahmini: ${vis.label}${vis.range ? ` (${vis.range})` : ''}.`);
-  if (vis.cls === 'murky') r = Math.max(r, 2);
-  if (vis.cls === 'bad') r = Math.max(r, 3);
-  if (boat.level === 'bad') {
-    r = 3;
-    reasons.push('Tekneyle çıkış önerilmiyor.');
-  }
-  if (h.weatherCode != null && h.weatherCode >= 95) reasons.push('Gök gürültülü fırtına riski.');
-  if (!isDaylight(series, h.time)) {
-    r = 3;
-    reasons.push('Gün ışığı yok.');
-  }
+  const rw = rank(lw, 'wave');
+  const rwind = rank(wind, 'wind');
+  const rc = rank(cur, 'current');
+  let r = Math.max(rw, rwind, rc);
+  if (rw >= 2) notes.push('Koy içinde dalga fazla.');
+  if (rwind >= 2) notes.push('Rüzgâr kuvvetli.');
+  if (cur == null) notes.push('Akıntı verisi yok.');
+  else if (rc >= 2) notes.push('Akıntı kuvvetli.');
+  if (vis.cls === 'murky') { r = Math.max(r, 2); notes.push('Su bulanık.'); }
+  if (vis.cls === 'bad') { r = 3; notes.push('Su çok bulanık.'); }
+  if (boat.level === 'bad') { r = 3; notes.push('Tekneyle çıkış önerilmiyor.'); }
+  if (rain.thunder) { r = 3; notes.push('Gök gürültülü fırtına riski var.'); }
+  else if (rain.cls === 'heavy' || rain.cls === 'violent') { r = Math.max(r, 2); notes.push('Kuvvetli yağış var.'); }
+  const daylight = isDaylight(series, h.time);
+  if (!daylight) { r = 3; notes.push('Gün ışığı yok.'); }
   const level = ['ideal', 'ok', 'marginal', 'no'][r];
-  const title = {
-    ideal: 'Zıpkın için çok uygun', ok: 'Zıpkın için uygun', marginal: 'Sınırda, zorlayıcı', no: 'Dalış önerilmez',
-  }[level];
+  const title = { ideal: 'Çok uygun', ok: 'Uygun', marginal: 'Sınırda', no: 'Önerilmez' }[level];
 
   let score = 100;
   score -= Math.min(40, (lw / DIVE_LIMITS.marginal.wave) * 40);
   score -= Math.min(25, (wind / DIVE_LIMITS.marginal.wind) * 25);
   if (cur != null) score -= Math.min(10, (cur / DIVE_LIMITS.marginal.current) * 10);
   if (vis.score != null) score -= vis.score * 0.35;
+  if (rain.known) score -= Math.min(10, rain.mm * 2.5);
   if (h.cmp.wave_height.agreement === 'poor' || h.cmp.wind_speed_10m.agreement === 'poor') score -= 8;
   if (r === 3) score = Math.min(score, 15);
-  return { level, title, reasons, score: Math.max(0, Math.round(score)), vis, boat };
+  return { level, title, notes, score: Math.max(0, Math.round(score)), vis, boat, rain, daylight };
 }
 
-// Seçilen gün için en iyi ardışık 3 saatlik pencere.
+// Saat kutusunun rengi: ikisi de uygunsa yeşil, biri uygunsa sarı, hiçbiri değilse kırmızı.
+export function combined(series, i, spot) {
+  const dive = diveVerdict(series, i, spot);
+  const boat = dive.boat;
+  if (dive.level === 'unknown' && boat.level === 'unknown') return { level: 'unknown', label: 'Veri yok', dive, boat };
+  const diveOk = dive.level === 'ideal' || dive.level === 'ok';
+  const boatOk = boat.level === 'good' || boat.level === 'caution';
+  if (diveOk && boatOk) return { level: 'both', label: 'İkisi de', dive, boat };
+  if (boatOk) return { level: 'one', label: 'Yalnız tekne', dive, boat };
+  if (diveOk) return { level: 'one', label: 'Yalnız zıpkın', dive, boat };
+  return { level: 'none', label: 'Uygun değil', dive, boat };
+}
+
+// Seçilen gün için gün ışığındaki en iyi ardışık 3 saat.
 // minTime verilirse (bugün için şimdiki saat) geçmiş saatler hesaba katılmaz.
 export function bestWindow(series, spot, day, minTime = null) {
-  const idx = [];
+  const scored = [];
   series.hours.forEach((h, i) => {
-    if (h.time.startsWith(day) && isDaylight(series, h.time) && (!minTime || h.time >= minTime)) idx.push(i);
+    if (!h.time.startsWith(day) || !isDaylight(series, h.time) || (minTime && h.time < minTime)) return;
+    const v = diveVerdict(series, i, spot);
+    if (v.score != null) scored.push({ i, v });
   });
-  const scored = idx.map((i) => ({ i, v: diveVerdict(series, i, spot) })).filter((x) => x.v.score != null);
   if (scored.length === 0) return null;
   let best = null;
   for (let k = 0; k < scored.length; k++) {
@@ -204,8 +260,29 @@ export function bestWindow(series, spot, day, minTime = null) {
     to: series.hours[best.win[best.win.length - 1].i].time,
     level: worst,
     mid: best.win[Math.floor(best.win.length / 2)],
-    hourly: scored,
   };
+}
+
+// Tüm koyları seçilen gün için sıralar: önce uygunluk düzeyi, sonra puan.
+export function rankSpots(allSeries, spots, day, minTime = null) {
+  const order = ['ideal', 'ok', 'marginal', 'no'];
+  const key = (r) => (r.best ? order.indexOf(r.best.level) * 1000 - r.best.score : 1e6);
+  return spots
+    .map((spot) => ({ spot, best: bestWindow(allSeries[spot.id], spot, day, minTime) }))
+    .sort((a, b) => key(a) - key(b));
+}
+
+// Seçilen saatte tekne için en sakin bölge (açık deniz dalgası en düşük olan).
+export function calmestSpot(allSeries, spots, time) {
+  let best = null;
+  for (const spot of spots) {
+    const s = allSeries[spot.id];
+    const h = s.hours[s.times.indexOf(time)];
+    const wave = h?.dv.wave_height;
+    if (wave == null) continue;
+    if (!best || wave < best.wave) best = { spot, wave, wind: h.dv.wind_speed_10m, windDir: h.dv.wind_direction_10m };
+  }
+  return best;
 }
 
 export function moonPhase(date) {
@@ -214,67 +291,4 @@ export function moonPhase(date) {
   const age = ((((date.getTime() - ref) / 86400000) % synodic) + synodic) % synodic;
   const names = ['Yeni ay', 'Hilal (büyüyen)', 'İlk dördün', 'Şişkin ay (büyüyen)', 'Dolunay', 'Şişkin ay (küçülen)', 'Son dördün', 'Hilal (küçülen)'];
   return { age, name: names[Math.round((age / synodic) * 8) % 8], nearSyzygy: age < 2.5 || age > synodic - 2.5 || Math.abs(age - synodic / 2) < 2.5 };
-}
-
-// Balık aktivitesi: genel kurallara dayalı, düşük güvenli yorum.
-export function fishActivity(series, i, spot) {
-  const h = series.hours[i];
-  const sst = h.dv.sea_surface_temperature;
-  const cur = h.dv.ocean_current_velocity;
-  const lw = h.localWave;
-  const vis = visibilityEstimate(series, i, spot);
-  const hr = Number(h.time.slice(11, 13));
-  let twilight = hr <= 8 || hr >= 16;
-  if (series.daily) {
-    const d = series.daily.time.indexOf(h.time.slice(0, 10));
-    if (d >= 0) {
-      const rise = Number(series.daily.sunrise[d].slice(11, 13));
-      const set = Number(series.daily.sunset[d].slice(11, 13));
-      twilight = hr - rise <= 2 || set - hr <= 2;
-    }
-  }
-  const moon = moonPhase(new Date(h.time + ':00+03:00'));
-  const past = series.hours[Math.max(0, i - 6)];
-  const dp = h.pressure != null && past.pressure != null ? h.pressure - past.pressure : null;
-
-  const general = [];
-  let base = 0;
-  if (twilight) { base += 1; general.push('Gün doğumu/batımına yakın saat: av hareketi genelde artar.'); }
-  if (moon.nearSyzygy) { base += 0.5; general.push(`${moon.name}: akıntı ve beslenme hareketi biraz artabilir.`); }
-  else general.push(`Ay evresi: ${moon.name}.`);
-  if (dp != null) {
-    if (dp <= -2) { base += 0.5; general.push('Basınç düşüyor: cephe öncesi beslenme artabilir.'); }
-    else if (dp >= 3) { base -= 0.5; general.push('Basınç hızla yükseliyor: balık durgun olabilir.'); }
-  }
-  if (cur != null && cur >= 0.2 && cur <= 0.8) { base += 0.5; general.push('Hafif akıntı var: burun ve taşlık uçlarda hareket beklenir.'); }
-  if (sst != null) general.push(`Su sıcaklığı ${n1(sst)} °C.`);
-  else general.push('Su sıcaklığı verisi yok; tür yorumu daha da belirsiz.');
-
-  const species = [];
-  const add = (name, pts, why) => {
-    const total = base + pts;
-    species.push({ name, level: total >= 2 ? 'yüksek' : total >= 1 ? 'orta' : 'düşük', why, total });
-  };
-  const inRange = (lo, hi) => sst != null && sst >= lo && sst <= hi;
-  add('Sinarit', (inRange(17, 25) ? 1 : 0) + (vis.cls === 'clear' || vis.cls === 'medium' ? 0.5 : -0.5),
-    'Serin-ılık temiz suyu ve akıntılı burunları sever.');
-  add('Akya / sarıkuyruk', (sst != null && sst >= 21 ? 1 : -0.5) + (cur != null && cur >= 0.2 ? 0.5 : 0),
-    'Ilık su ve akıntıyla birlikte yem balığı peşinde dolaşır.');
-  add('Sargos / karagöz', (lw != null && lw >= 0.3 && lw <= 0.8 ? 1.5 : 0.5),
-    'Köpüklü, hafif çalkantılı kayalık sığlıklarda aktifleşir.');
-  add('Levrek', (sst != null && sst <= 20 ? 1 : -0.5) + (vis.cls === 'murky' || spot.river >= 0.8 ? 0.5 : 0),
-    'Serin, hafif bulanık su ve dere ağızlarını sever.');
-  add('Çipura', (inRange(16, 24) ? 1 : 0) + (lw != null && lw < 0.4 ? 0.5 : 0),
-    'Sakin, kumluk-eriştelik sığ alanlarda beslenir.');
-  species.sort((a, b) => b.total - a.total);
-  return { general, species, moon };
-}
-
-// Tüm koyları seçilen gün için sıralar.
-export function rankSpots(allSeries, spots, day, minTime = null) {
-  const order = ['ideal', 'ok', 'marginal', 'no'];
-  const key = (r) => (r.best ? order.indexOf(r.best.level) * 1000 - r.best.score : 1e6);
-  return spots
-    .map((spot) => ({ spot, best: bestWindow(allSeries[spot.id], spot, day, minTime) }))
-    .sort((a, b) => key(a) - key(b));
 }

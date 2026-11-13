@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b3a53">
+  <meta name="theme-color" content="#0c2f44">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,79 +16,91 @@
 </head>
 <body>
   <header class="top">
-    <div>
-      <h1>Antalya Deniz Programı</h1>
-      <p id="updated" class="muted">Yükleniyor…</p>
+    <div class="top-row">
+      <div>
+        <h1>Antalya Deniz Programı</h1>
+        <p id="updated">Yükleniyor…</p>
+      </div>
+      <button id="refresh" type="button">Yenile</button>
     </div>
-    <button id="refresh" type="button">Yenile</button>
+    <div class="picker">
+      <label>Konum <select id="spot"></select></label>
+      <label>Tarih <input id="date" type="date"></label>
+      <label>Saat <select id="hour"></select></label>
+    </div>
   </header>
 
   <main>
-    <section class="controls">
-      <label>Konum
-        <select id="spot"></select>
-      </label>
-      <div id="days" class="chips" role="group" aria-label="Gün"></div>
-    </section>
-
     <div id="alerts"></div>
 
-    <section>
-      <h2>Akıllı sonuç <span id="when" class="muted"></span></h2>
-      <div id="verdicts" class="cards"></div>
-    </section>
+    <section id="status" class="status" aria-live="polite"></section>
 
     <section>
-      <h2>Saatlik durum</h2>
-      <p class="muted small">Renk zıpkın uygunluğunu gösterir. Bir saate dokun, aşağıdaki karşılaştırma o saate geçer.</p>
+      <div class="head">
+        <h2>Gün boyu <span id="dayName" class="muted"></span></h2>
+        <ul class="legend">
+          <li><i class="dot both"></i>Zıpkın ve tekne</li>
+          <li><i class="dot one"></i>Yalnız biri</li>
+          <li><i class="dot none"></i>Uygun değil</li>
+        </ul>
+      </div>
       <div id="hours" class="hours"></div>
     </section>
 
-    <section>
-      <h2>Kaynak karşılaştırması <span id="cmpWhen" class="muted"></span></h2>
-      <div id="summary" class="summary"></div>
+    <section id="dive" class="panel"></section>
+    <section id="boat" class="panel"></section>
+    <section id="rain" class="panel"></section>
+
+    <section class="panel">
+      <div class="head"><h2>Saatlik yağış <span id="rainDay" class="muted"></span></h2></div>
+      <div id="rainChart" class="chart"></div>
+    </section>
+
+    <details>
+      <summary>Kaynak karşılaştırması <span id="cmpWhen" class="muted"></span></summary>
+      <div id="summary" class="sentences"></div>
       <div class="scroll"><table id="cmp"></table></div>
-      <p class="muted small">Ağ. ort. = çözünürlük, güncellik ve model noktasının uzaklığına göre ağırlıklı ortalama. “–” = o kaynak bu değeri vermiyor.</p>
-    </section>
+      <p class="note">Ağ. ort.: çözünürlük, güncellik ve model noktasının uzaklığına göre ağırlıklı ortalama. “–”: o kaynak bu değeri vermiyor.</p>
+    </details>
 
-    <section>
-      <h2>Hangi koy daha iyi? <span id="rankWhen" class="muted"></span></h2>
+    <details>
+      <summary>Tüm koyların sıralaması</summary>
       <div class="scroll"><table id="rank"></table></div>
-      <p class="muted small">Koy içi dalga, açık deniz tahmininin koyun açık olduğu yöne göre düzeltilmiş halidir. Konum koordinatları ve açıklık yönleri yaklaşıktır.</p>
-    </section>
+      <p class="note">Koy içi dalga, açık deniz tahmininin koyun açık olduğu yöne göre düzeltilmiş halidir. Konumlar ve açıklık yönleri yaklaşıktır.</p>
+    </details>
 
-    <section>
-      <h2>Kaynak durumu</h2>
+    <details>
+      <summary>Kaynak durumu ve güncelleme saatleri</summary>
       <div class="scroll"><table id="sources"></table></div>
-      <p id="licenses" class="muted small"></p>
-    </section>
+      <p id="licenses" class="note"></p>
+    </details>
 
-    <section>
-      <h2>Dalış günlüğü</h2>
-      <p class="muted small">Dönüşte gerçekte ne gördüğünü kaydet. Kayıtlar bu cihazda saklanır ve tahminin ne kadar tuttuğunu gösterir.</p>
-      <form id="logForm" class="logform">
+    <details>
+      <summary>Dalış günlüğü</summary>
+      <p class="note">Dönüşte gerçekte ne gördüğünü kaydet; tahminin ne kadar tuttuğunu gösterir. Kayıtlar bu cihazda kalır.</p>
+      <form id="logForm" class="form">
         <label>Gerçek görüş (m) <input id="logVis" type="number" min="0" max="50" step="1" required></label>
         <label>Gerçek dalga (m) <input id="logWave" type="number" min="0" max="5" step="0.1"></label>
         <label class="grow">Not <input id="logNote" type="text" maxlength="120"></label>
         <button type="submit">Seçili konum ve saat için kaydet</button>
       </form>
-      <div id="logSummary" class="muted small"></div>
+      <p id="logSummary" class="note"></p>
       <div class="scroll"><table id="log"></table></div>
-    </section>
+    </details>
 
-    <section>
-      <h2>Ek kaynak: Stormglass (isteğe bağlı)</h2>
-      <p class="muted small">Ücretsiz Stormglass anahtarı günde 10 istekle sınırlıdır ve ticari kullanıma izin vermez. Anahtar yalnızca bu cihazda saklanır; veri 6 saat önbellekte tutulur ve sadece seçili konum için çekilir.</p>
-      <form id="sgForm" class="logform">
+    <details>
+      <summary>Ek kaynak: Stormglass (isteğe bağlı)</summary>
+      <p class="note">Ücretsiz anahtar günde 10 istekle sınırlıdır ve ticari kullanıma izin vermez. Anahtar yalnızca bu cihazda saklanır; veri sadece seçili konum için çekilir.</p>
+      <form id="sgForm" class="form">
         <label class="grow">API anahtarı <input id="sgKey" type="password" autocomplete="off"></label>
         <button type="submit">Kaydet</button>
       </form>
-    </section>
+    </details>
   </main>
 
   <footer>
-    <p>Bu program tahmin üretir, ölçüm yapmaz. Denize çıkmadan önce resmî denizcilik bültenini ve kendi gözlemini esas al. Balık türü, boy ve dönem yasaklarını güncel su ürünleri tebliğinden kontrol et.</p>
-    <p>Hava ve deniz verisi: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · Modeller: Météo-France, DWD, ECMWF, NOAA · E.U. Copernicus Marine Service Information.</p>
+    <p>Bu program tahmin üretir, ölçüm yapmaz. Balık aktivitesi yüzdeleri ve av önerileri mevsim, su sıcaklığı ve deniz durumundan hesaplanan genel tahminlerdir. Denize çıkmadan önce resmî denizcilik bültenini esas al; tür, boy ve dönem yasaklarını güncel su ürünleri tebliğinden kontrol et.</p>
+    <p>Veri: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · Météo-France, DWD, ECMWF, NOAA · E.U. Copernicus Marine Service Information.</p>
   </footer>
 
   <script type="module" src="js/app.js"></script>

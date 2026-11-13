@@ -3,7 +3,7 @@
 
 export const TIMEZONE = 'Europe/Istanbul';
 export const PAST_DAYS = 3; // görüş tahmini için geçmiş 72 saat
-export const FORECAST_DAYS = 4;
+export const FORECAST_DAYS = 8; // dalga modellerinin ulaştığı en uzun süre
 
 const OM_LICENSE = 'Open-Meteo üzerinden · veri CC BY 4.0 · ücretsiz API yalnızca ticari olmayan kullanım';
 
@@ -77,9 +77,10 @@ export const VARIABLES = [
   { key: 'wave_period', label: 'Dalga periyodu', unit: 'sn', digits: 1, tolAbs: 1.5, tolRel: 0.25 },
   { key: 'swell_wave_height', label: 'Swell yüksekliği', unit: 'm', digits: 1, tolAbs: 0.2, tolRel: 0.3 },
   { key: 'swell_wave_direction', label: 'Swell yönü', unit: '°', circular: true, strengthKey: 'swell_wave_height', calmBelow: 0.2 },
-  { key: 'wind_speed_10m', label: 'Rüzgâr hızı', unit: 'kn', digits: 0, tolAbs: 4, tolRel: 0.3 },
-  { key: 'wind_direction_10m', label: 'Rüzgâr yönü', unit: '°', circular: true, strengthKey: 'wind_speed_10m', calmBelow: 5 },
-  { key: 'wind_gusts_10m', label: 'Rüzgâr hamlesi', unit: 'kn', digits: 0, tolAbs: 6, tolRel: 0.3 },
+  { key: 'wind_speed_10m', label: 'Rüzgâr hızı', unit: 'km/sa', digits: 0, tolAbs: 7, tolRel: 0.3 },
+  { key: 'wind_direction_10m', label: 'Rüzgâr yönü', unit: '°', circular: true, strengthKey: 'wind_speed_10m', calmBelow: 9 },
+  { key: 'wind_gusts_10m', label: 'Rüzgâr hamlesi', unit: 'km/sa', digits: 0, tolAbs: 11, tolRel: 0.3 },
+  { key: 'precipitation', label: 'Yağış', unit: 'mm/sa', digits: 1, tolAbs: 0.5, tolRel: 0.5 },
   { key: 'ocean_current_velocity', label: 'Akıntı hızı', unit: 'kn', digits: 1, tolAbs: 0.2, tolRel: 0.4 },
   { key: 'ocean_current_direction', label: 'Akıntı yönü', unit: '°', circular: true, strengthKey: 'ocean_current_velocity', calmBelow: 0.2 },
   { key: 'sea_surface_temperature', label: 'Deniz sıcaklığı', unit: '°C', digits: 1, tolAbs: 1, tolRel: 0 },
@@ -104,15 +105,15 @@ export const SPOTS = [
   { id: 'adrasan', name: 'Adrasan', lat: 36.300, lon: 30.480, open: [90, 170], river: 0.2, shelter: 0.7 },
 ];
 
-// 10 m üzeri motorlu tekne için eşikler (açık deniz değerleri üzerinden).
+// 10 m üzeri motorlu tekne için eşikler (açık deniz değerleri üzerinden). Rüzgâr km/sa.
 export const BOAT_LIMITS = {
-  good: { wave: 0.8, wind: 15, gust: 22 },
-  caution: { wave: 1.5, wind: 22, gust: 30 },
+  good: { wave: 0.8, wind: 28, gust: 40 },
+  caution: { wave: 1.5, wind: 40, gust: 55 },
 };
 
 // Zıpkınla dalış için eşikler (koy içi tahmini dalga üzerinden).
 export const DIVE_LIMITS = {
-  ideal: { wave: 0.3, wind: 10, current: 0.5 },
-  ok: { wave: 0.5, wind: 15, current: 0.8 },
-  marginal: { wave: 0.8, wind: 20, current: 1.2 },
+  ideal: { wave: 0.3, wind: 18, current: 0.5 },
+  ok: { wave: 0.5, wind: 28, current: 0.8 },
+  marginal: { wave: 0.8, wind: 37, current: 1.2 },
 };

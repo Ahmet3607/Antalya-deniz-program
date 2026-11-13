@@ -20,10 +20,25 @@ export function circularMean(degs, weights) {
   return (Math.atan2(y, x) / RAD + 360) % 360;
 }
 
-export function compass(deg) {
+// Sekiz ana yön; ayrıntıya boğmadan.
+export function dirName(deg) {
   if (deg == null) return '';
-  const names = ['K', 'KKD', 'KD', 'DKD', 'D', 'DGD', 'GD', 'GGD', 'G', 'GGB', 'GB', 'BGB', 'B', 'BKB', 'KB', 'KKB'];
-  return names[Math.round(deg / 22.5) % 16];
+  const names = ['kuzey', 'kuzeydoğu', 'doğu', 'güneydoğu', 'güney', 'güneybatı', 'batı', 'kuzeybatı'];
+  return names[Math.round(deg / 45) % 8];
+}
+
+// Rüzgârın denizci adı (estiği yöne göre).
+export function windName(deg) {
+  if (deg == null) return '';
+  const names = ['yıldız', 'poyraz', 'gündoğusu', 'keşişleme', 'kıble', 'lodos', 'günbatısı', 'karayel'];
+  return names[Math.round(deg / 45) % 8];
+}
+
+// "35 km/sa poyraz"
+export function windText(speed, deg) {
+  if (speed == null) return 'veri yok';
+  if (speed < 4) return 'rüzgâr yok denecek kadar az';
+  return `${Math.round(speed)} km/sa ${windName(deg)}`.trim();
 }
 
 // Bir kaynağın ağırlığı: çözünürlük, güncellik ve model noktasının konuma uzaklığı.
@@ -104,7 +119,7 @@ export function describe(variable, cmp) {
   const what = variable.label.toLocaleLowerCase('tr-TR');
   if (cmp.agreement === 'none') return `${variable.label}: hiçbir kaynaktan veri alınamadı.`;
   if (cmp.circular) {
-    const dir = `${compass(cmp.wmean)} (${Math.round(cmp.wmean)}°)`;
+    const dir = variable.key.startsWith('wind') ? windName(cmp.wmean) : dirName(cmp.wmean);
     if (cmp.agreement === 'single') return `${variable.label}: ${dir}. Tek kaynak var, karşılaştırma yapılamıyor.`;
     if (cmp.calm) return `${variable.label}: ${dir} civarı. Değer çok zayıf olduğu için yön farkı önemsiz.`;
     if (cmp.agreement === 'good') return `${cmp.count} kaynak ${what} için ${dir} civarında uyuşuyor.`;

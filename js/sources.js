@@ -87,10 +87,7 @@ async function fetchOpenMeteo(model) {
     timezone: TIMEZONE,
     cell_selection: 'sea',
   });
-  if (model.api === 'weather') {
-    params.set('wind_speed_unit', 'kn');
-    params.set('daily', 'sunrise,sunset');
-  }
+  if (model.api === 'weather') params.set('daily', 'sunrise,sunset');
   const path = model.api === 'marine' ? '/v1/marine' : '/v1/forecast';
   const [data, meta] = await Promise.all([
     getJson(`${HOSTS[model.api]}${path}?${params}`),
@@ -132,7 +129,7 @@ async function fetchOpenMeteo(model) {
 // Tüm Open-Meteo modellerini paralel çeker. Sonuç: { [modelId]: { def, ok, error?, ...veri } }
 export async function loadAll({ force = false } = {}) {
   const results = await Promise.all(MODELS.map(async (def) => {
-    const key = `adp:model:${def.id}`;
+    const key = `adp2:model:${def.id}`;
     if (!force) {
       const cached = cacheGet(key, CACHE_MIN * 60000);
       if (cached) return [def.id, { def, ok: true, fromCache: true, ...cached }];
@@ -161,9 +158,9 @@ const SG_PARAMS = {
   swellHeight: ['swell_wave_height', 1],
   swellDirection: ['swell_wave_direction', 1],
   swellPeriod: ['swell_wave_period', 1],
-  windSpeed: ['wind_speed_10m', 1.94384], // m/sn → kn
+  windSpeed: ['wind_speed_10m', 3.6], // m/sn → km/sa
   windDirection: ['wind_direction_10m', 1],
-  gust: ['wind_gusts_10m', 1.94384],
+  gust: ['wind_gusts_10m', 3.6],
   currentSpeed: ['ocean_current_velocity', 1.94384],
   currentDirection: ['ocean_current_direction', 1],
   waterTemperature: ['sea_surface_temperature', 1],
@@ -187,7 +184,7 @@ export async function loadStormglass(spot) {
   const def = STORMGLASS;
   const apiKey = getStormglassKey();
   if (!apiKey) return null;
-  const key = `adp:sg:${spot.id}`;
+  const key = `adp2:sg:${spot.id}`;
   const cached = cacheGet(key, SG_CACHE_H * 3600000);
   if (cached) return { def, ok: true, fromCache: true, ...cached };
   try {

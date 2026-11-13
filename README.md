@@ -4,16 +4,18 @@ Antalya körfezindeki koylar için çok kaynaklı deniz tahmini, kaynak karşıl
 
 ## Ne yapar
 
-- Beş dalga modeli, dört rüzgâr modeli ve bir okyanus modelini aynı koordinat ve aynı saat için ayrı ayrı gösterir.
-- Her değer için en düşük, en yüksek, ortalama, ağırlıklı ortalama, fark ve uyum durumunu hesaplar.
-- Ağırlık; model çözünürlüğü, son güncelleme zamanı ve model noktasının konuma uzaklığından gelir.
-- Kaynaklar ayrışıyorsa karar ortalamaya göre değil, en yüksek tahmine göre verilir.
-- Açık deniz dalgasını koyun açık olduğu yöne göre düzeltip koy içi dalgayı tahmin eder.
-- Tekne, zıpkın, en iyi saat, en iyi koy, su altı görüşü ve balık aktivitesi için yorum üretir.
-- Bir kaynak çalışmazsa diğerleriyle devam eder, eksik olanı ekranda açıkça yazar.
-- Dalış günlüğü ile tahminin gerçekte ne kadar tuttuğunu kaydeder.
+Ekran yukarıdan aşağıya şöyle dizilir:
 
-Su altı görüşü ve balık aktivitesi ölçüm değil, kural tabanlı tahmindir.
+1. **Konum, tarih ve saat seçimi.** Bugünden 7 gün sonrasına kadar istenen gün ve saat seçilir.
+2. **Gün boyu saatler.** Zıpkın ve tekne ikisi de uygunsa yeşil, yalnız biri uygunsa sarı (hangisi olduğu yazar), ikisi de uygun değilse kırmızı.
+3. **Zıpkın.** Su altı görüşü, koy içi dalga, rüzgâr, akıntı, su sıcaklığı, yağış; en iyi saat, en iyi koylar ve türlere göre balık aktivitesi tahmini.
+4. **Tekne.** Dalga, rüzgâr, hamle, yağış, hava görüşü, en sakin bölge; yönteme göre av önerileri (derinlik, gelebilecek balık, yem ya da jig).
+5. **Yağış.** Günün yağış özeti, şiddeti ve kaç modelin yağış gösterdiği; altında saatlik yağış grafiği.
+6. **Ayrıntılar (kapalı gelir).** Kaynak karşılaştırma tablosu, koy sıralaması, kaynak durumu, dalış günlüğü.
+
+Arka planda beş dalga, dört rüzgâr ve bir okyanus modeli aynı koordinat ve saat için karşılaştırılır. Kaynaklar ayrışıyorsa karar ortalamaya göre değil, en yüksek tahmine göre verilir. Bir kaynak çalışmazsa diğerleriyle devam edilir ve eksik olan ekranda yazılır.
+
+Su altı görüşü, balık aktivitesi yüzdeleri ve av önerileri ölçüm ya da istatistik değil, kural tabanlı tahmindir. Balık mevsimleri ve yemler `js/fish.js` içinde düzenlenebilir.
 
 ## Çalıştırma
 
