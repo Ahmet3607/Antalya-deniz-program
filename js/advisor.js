@@ -192,7 +192,7 @@ export function visibilityEstimate(series, i, spot) {
   }
   const wind = h.dv.wind_speed_10m;
   const wdir = h.dv.wind_direction_10m;
-  if (wind != null && wdir != null && wind >= 28) {
+  if (spot.open && wind != null && wdir != null && wind >= 28) {
     const [a, b] = spot.open;
     const mid = (a + ((b - a + 360) % 360) / 2) % 360;
     if (angDiff(wdir, mid) <= 60) {

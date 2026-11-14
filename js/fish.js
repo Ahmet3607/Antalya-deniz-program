@@ -40,6 +40,7 @@ const HABITAT = {
 };
 
 function habitatMatch(name, spot) {
+  if (!spot.habitat) return 1; // zemin bilinmiyorsa süzme
   const h = HABITAT[name] ?? {};
   return Math.max(0, ...(spot.habitat ?? []).map((t) => h[t] ?? 0));
 }

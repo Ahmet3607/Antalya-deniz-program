@@ -1,5 +1,5 @@
 import { SPOTS, VARIABLES } from './config.js';
-import { loadAll, loadStormglass, localHourString, getStormglassKey, setStormglassKey } from './sources.js';
+import { loadAll, loadStormglass, localHourString, getStormglassKey, setStormglassKey, searchPlaces } from './sources.js';
 import { buildSeries } from './analysis.js';
 import { AGREEMENT_LABEL, describe, dirName, windName, windText } from './compare.js';
 import {
@@ -9,7 +9,7 @@ import {
 import { spearFish, boatFishing } from './fish.js';
 
 // Her yayında artırılır. Ekranın altında görünür; çalışan KODUN sürümünü gösterir.
-const VERSION = 11;
+const VERSION = 12;
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -27,6 +27,15 @@ const stored = (key, fallback) => {
 const store = (key, value) => {
   try { localStorage.setItem(key, value); } catch { /* depolama kapalı */ }
 };
+
+// Aramayla eklenen yerler bu cihazda saklanır ve hazır konumların yanına eklenir.
+// Bu yerlerde koyun açıklığı ve zemin tipi bilinmez.
+const MAX_CUSTOM = 5; // her yer veri isteklerini büyütür
+const readCustom = () => {
+  try { return JSON.parse(stored('adp:custom', '[]')); } catch { return []; }
+};
+const saveCustom = () => store('adp:custom', JSON.stringify(SPOTS.filter((s) => s.custom)));
+for (const c of readCustom()) SPOTS.push({ ...c, custom: true, open: null, habitat: null, river: 0.3, shelter: 1 });
 
 const state = {
   store: {}, // Open-Meteo modelleri
@@ -210,7 +219,12 @@ function boatSummary(ctx) {
 // ---------- üst seçim ----------
 
 function renderPicker() {
-  $('spot').innerHTML = SPOTS.map((s) => `<option value="${s.id}"${s.id === state.spotId ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+  const opt = (s) => `<option value="${s.id}"${s.id === state.spotId ? ' selected' : ''}>${esc(s.name)}</option>`;
+  const custom = SPOTS.filter((s) => s.custom);
+  $('spot').innerHTML = custom.length
+    ? `<optgroup label="Aradığın yerler">${custom.map(opt).join('')}</optgroup><optgroup label="Hazır konumlar">${SPOTS.filter((s) => !s.custom).map(opt).join('')}</optgroup>`
+    : SPOTS.map(opt).join('');
+  $('removeSpot').hidden = !spot().custom;
   const days = availableDays();
   const date = $('date');
   if (days.length) {
@@ -239,6 +253,10 @@ function renderAlerts() {
   const stale = Object.values(state.store).filter((x) => x.stale);
   if (stale.length) {
     parts.push(`<div class="alert"><b>${stale.length} kaynak şu an yanıt vermiyor</b> (${esc(stale[0].staleReason)}); ${stale.map((x) => esc(x.def.name)).join(', ')} için ${stamp(Math.min(...stale.map((x) => x.fetchedAt)))} tarihli eski veri kullanılıyor.</div>`);
+  }
+  if (spot().custom && okCount > 0) {
+    const sd = Object.values(state.store).find((x) => x.ok && x.def.group === 'wave')?.spots[state.spotId];
+    parts.push(`<div class="alert">Bu yer aramayla eklendi. Koyun korunaklılığı ve zemin tipi bilinmediği için <b>açık deniz dalgası</b> gösterilir ve balık tahmini zemine göre süzülmez.${sd?.distKm != null ? ` Dalga modelinin en yakın deniz noktası ${num(sd.distKm)} km uzakta${sd.distKm > 15 ? '; bu yer denizden uzak olabilir' : ''}.` : ''}</div>`);
   }
   const groups = { wave: 'dalga', wind: 'rüzgâr ve yağış', ocean: 'akıntı ve su sıcaklığı' };
   for (const [g, label] of Object.entries(groups)) {
@@ -792,6 +810,58 @@ async function selectSpot(id) {
 }
 
 $('refresh').addEventListener('click', () => load(true));
+
+// ---------- yer arama ----------
+
+async function addPlace(r) {
+  const id = `c_${r.lat.toFixed(3)}_${r.lon.toFixed(3)}`;
+  if (!SPOTS.some((s) => s.id === id)) {
+    const custom = SPOTS.filter((s) => s.custom);
+    if (custom.length >= MAX_CUSTOM) SPOTS.splice(SPOTS.indexOf(custom[0]), 1); // en eskisi çıkar
+    SPOTS.push({ id, name: r.name, lat: r.lat, lon: r.lon, custom: true, open: null, habitat: null, river: 0.3, shelter: 1 });
+    saveCustom();
+  }
+  state.spotId = id;
+  store('adp:spot', id);
+  $('results').innerHTML = '';
+  $('q').value = '';
+  await load(); // konum listesi değiştiği için veri yeniden çekilir
+}
+
+$('searchForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = $('q').value.trim();
+  const box = $('results');
+  if (q.length < 2) {
+    box.innerHTML = '<p>En az 2 harf yaz.</p>';
+    return;
+  }
+  box.innerHTML = '<p>Aranıyor…</p>';
+  try {
+    const found = await searchPlaces(q);
+    if (!found.length) {
+      box.innerHTML = `<p>“${esc(q)}” için yer bulunamadı. Yazımı kontrol et ya da yakındaki bir ilçe adını dene.</p>`;
+      return;
+    }
+    box.innerHTML = found.map((r, n) => `<button type="button" data-n="${n}">${esc(r.name)}<small>${esc(r.detail)}</small></button>`).join('');
+    box.onclick = (ev) => {
+      const n = ev.target.closest('[data-n]')?.dataset.n;
+      if (n != null) addPlace(found[Number(n)]);
+    };
+  } catch (err) {
+    box.innerHTML = `<p>Arama yapılamadı (${esc(err.message || err)}). Bağlantını kontrol edip tekrar dene.</p>`;
+  }
+});
+
+$('removeSpot').addEventListener('click', async () => {
+  const i = SPOTS.findIndex((s) => s.id === state.spotId && s.custom);
+  if (i < 0) return;
+  SPOTS.splice(i, 1);
+  saveCustom();
+  state.spotId = SPOTS[0].id;
+  store('adp:spot', state.spotId);
+  await load();
+});
 $('spot').addEventListener('change', (e) => selectSpot(e.target.value));
 $('date').addEventListener('change', (e) => {
   if (!e.target.value) return;

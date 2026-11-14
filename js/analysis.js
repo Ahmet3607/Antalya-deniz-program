@@ -71,7 +71,7 @@ function meanAcross(store, spotId, key, time, reducer = 'mean') {
 
 // Dalganın geldiği yöne göre koyun ne kadar açık olduğu (1 = tam açık, 0,15 = arkada kalıyor).
 export function exposureFactor(spot, waveDir) {
-  if (waveDir == null) return 1;
+  if (waveDir == null || !spot.open) return 1; // aramayla eklenen yerde açıklık bilinmiyor
   const [a, b] = spot.open;
   const span = (b - a + 360) % 360;
   const rel = (waveDir - a + 360) % 360;

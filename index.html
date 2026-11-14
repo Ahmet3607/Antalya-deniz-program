@@ -23,8 +23,13 @@
       </div>
       <button id="refresh" type="button">Yenile</button>
     </div>
+    <form id="searchForm" class="search" role="search">
+      <label for="q">Yer ara</label>
+      <div><input id="q" type="search" placeholder="Örn. Kaş, Kalkan, Side" autocomplete="off" enterkeyhint="search"><button type="submit">Ara</button></div>
+      <div id="results" class="results" aria-live="polite"></div>
+    </form>
     <div class="picker">
-      <label class="wide">Konum <select id="spot"></select></label>
+      <label class="wide"><span>Konum <button id="removeSpot" type="button" class="link" hidden>bu yeri listeden çıkar</button></span><select id="spot"></select></label>
       <label class="wide"><span>Tarih <b id="dateDay"></b></span><input id="date" type="date"></label>
       <label class="wide">Saat <select id="hour"></select></label>
     </div>

@@ -6,6 +6,7 @@ Antalya körfezindeki koylar için çok kaynaklı deniz tahmini, kaynak karşıl
 
 Ekran yukarıdan aşağıya şöyle dizilir:
 
+0. **Yer arama.** Listede olmayan bir yer adıyla aranır (Open-Meteo Geocoding, ücretsiz). Seçilen yer bu cihazda saklanır (en fazla 5). Bu yerlerde koyun açıklığı ve zemin tipi bilinmediği için açık deniz dalgası gösterilir ve balık tahmini zemine göre süzülmez.
 1. **Konum, tarih ve saat seçimi.** Bugünden 7 gün sonrasına kadar bir gün ve saat seçilir; bütün ana bölümler bu saate göre çalışır.
 2. **Saatler.** Günün 24 saati: zıpkın ve tekne ikisi de uygunsa yeşil, yalnız biri uygunsa sarı (hangisi olduğu yazar), ikisi de uygun değilse kırmızı. Üstünde gün doğumu ve batımı yazar. Saate dokununca o saate geçilir; uygun değilse nedeni yazılır.
 2a. **Dalga görüntüsü.** Dokunulan saat için tahmini dalga şekli; düz deniz hizasından kaç cm yükseldiği ve kaç saniyede bir geldiği.

@@ -129,19 +129,23 @@ async function fetchOpenMeteo(model) {
 // Tüm Open-Meteo modellerini paralel çeker. Sonuç: { [modelId]: { def, ok, error?, ...veri } }
 export async function loadAll({ force = false } = {}) {
   const results = await Promise.all(MODELS.map(async (def) => {
+    // Konum listesi değişince (aramayla yer eklenince) eski önbellek geçersiz olur.
+    const sig = SPOTS.map((s) => `${s.lat},${s.lon}`).join(';');
     const key = `adp2:model:${def.id}`;
+    const wrap = (data) => ({ ...data, sig });
+    const valid = (c) => (c && c.sig === sig ? c : null);
     if (!force) {
-      const cached = cacheGet(key, CACHE_MIN * 60000);
+      const cached = valid(cacheGet(key, CACHE_MIN * 60000));
       if (cached) return [def.id, { def, ok: true, fromCache: true, ...cached }];
     }
     try {
       const fresh = await fetchOpenMeteo(def);
-      cacheSet(key, fresh);
+      cacheSet(key, wrap(fresh));
       return [def.id, { def, ok: true, ...fresh }];
     } catch (err) {
       const error = err.message || String(err);
       // Kaynak şu an çalışmıyorsa eski veriyi kullan ama eski olduğunu belirt.
-      const old = cacheGet(key, STALE_H * 3600000);
+      const old = valid(cacheGet(key, STALE_H * 3600000));
       if (old) return [def.id, { def, ok: true, fromCache: true, stale: true, staleReason: error, ...old }];
       return [def.id, { def, ok: false, error }];
     }
@@ -223,4 +227,23 @@ export async function loadStormglass(spot) {
   } catch (err) {
     return { def, ok: false, error: err.message || String(err) };
   }
+}
+
+// ---- yer arama (Open-Meteo Geocoding; ücretsiz, anahtar yok) ----
+
+// Önce Türkiye içinde arar; bulamazsa dünya genelinde.
+export async function searchPlaces(query) {
+  const base = 'https://geocoding-api.open-meteo.com/v1/search';
+  const ask = async (extra) => {
+    const params = new URLSearchParams({ name: query, count: 6, language: 'tr', format: 'json', ...extra });
+    const data = await getJson(`${base}?${params}`);
+    return (data.results ?? []).map((r) => ({
+      name: r.name,
+      detail: [r.admin2, r.admin1, r.country].filter((x) => x && x !== r.name).join(', '),
+      lat: r.latitude,
+      lon: r.longitude,
+    }));
+  };
+  const tr = await ask({ countryCode: 'TR' });
+  return tr.length ? tr : ask({});
 }
